@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck } from 'lucide-react';
+import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck } from 'lucide-react';
 import type { PlacementStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -10,6 +10,7 @@ export const Placements: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -18,7 +19,11 @@ export const Placements: React.FC = () => {
     startDate: '',
     endDate: '',
     status: 'pending' as PlacementStatus,
-    teacherId: ''
+    teacherId: '',
+    anexoA1: '' as string | undefined,
+    anexoA2: '' as string | undefined,
+    anexoA3: '' as string | undefined,
+    allSigned: false
   });
 
   const sortedPlacements = [...placements].sort((a, b) => {
@@ -26,6 +31,15 @@ export const Placements: React.FC = () => {
     const studentB = students.find(s => s.id === b.studentId);
     if (!studentA || !studentB) return 0;
     return studentA.lastName.localeCompare(studentB.lastName);
+  });
+
+  const filteredPlacements = sortedPlacements.filter(p => {
+    const student = students.find(s => s.id === p.studentId);
+    const company = companies.find(c => c.id === p.companyId);
+    if (!student || !company) return false;
+    
+    const searchString = `${student.firstName} ${student.lastName} ${student.email} ${company.name} ${company.location}`.toLowerCase();
+    return searchString.includes(search.toLowerCase());
   });
 
   const availableStudents = students.filter(s => 
@@ -51,7 +65,11 @@ export const Placements: React.FC = () => {
       startDate: placement.startDate,
       endDate: placement.endDate,
       status: placement.status,
-      teacherId: placement.teacherId || ''
+      teacherId: placement.teacherId || '',
+      anexoA1: placement.anexoA1 || '',
+      anexoA2: placement.anexoA2 || '',
+      anexoA3: placement.anexoA3 || '',
+      allSigned: !!placement.allSigned
     });
     setEditingId(placement.id);
     setIsAdding(true);
@@ -66,10 +84,40 @@ export const Placements: React.FC = () => {
       startDate: '',
       endDate: '',
       status: 'pending' as PlacementStatus,
-      teacherId: ''
+      teacherId: '',
+      anexoA1: '',
+      anexoA2: '',
+      anexoA3: '',
+      allSigned: false
     });
     setEditingId(null);
     setIsAdding(false);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'anexoA1' | 'anexoA2' | 'anexoA3') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        alert('Por favor, selecciona un archivo PDF.');
+        e.target.value = '';
+        return;
+      }
+      try {
+        const base64 = await fileToBase64(file);
+        setFormData(prev => ({ ...prev, [field]: base64 }));
+      } catch (err) {
+        console.error('Error al procesar el PDF:', err);
+      }
+    }
   };
 
   const getStatusBadge = (status: PlacementStatus) => {
@@ -228,6 +276,57 @@ export const Placements: React.FC = () => {
                 {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
+
+            <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-zinc-100">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  Anexo A1 (Opcional)
+                  {formData.anexoA1 && <CheckCircle2 size={16} className="text-emerald-500" />}
+                </label>
+                <input 
+                  type="file" 
+                  accept="application/pdf"
+                  className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                  onChange={e => handleFileChange(e, 'anexoA1')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  Anexo A2
+                  {formData.anexoA2 && <CheckCircle2 size={16} className="text-emerald-500" />}
+                </label>
+                <input 
+                  type="file" 
+                  accept="application/pdf"
+                  className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                  onChange={e => handleFileChange(e, 'anexoA2')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  Anexo A3
+                  {formData.anexoA3 && <CheckCircle2 size={16} className="text-emerald-500" />}
+                </label>
+                <input 
+                  type="file" 
+                  accept="application/pdf"
+                  className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                  onChange={e => handleFileChange(e, 'anexoA3')}
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-3 flex items-center gap-2 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  className="w-5 h-5 rounded border-zinc-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                  checked={formData.allSigned}
+                  onChange={e => setFormData({...formData, allSigned: e.target.checked})}
+                />
+                <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 transition-colors">¿Están todos los anexos firmados?</span>
+              </label>
+            </div>
             <div className="md:col-span-1 lg:col-span-2 flex justify-end mt-2">
               <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">
                 {editingId ? 'Actualizar Asignación' : 'Crear Asignación'}
@@ -237,13 +336,33 @@ export const Placements: React.FC = () => {
         </div>
       )}
 
+      {/* Buscador */}
+      {placements.length > 0 && (
+        <div className="bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm flex items-center bg-zinc-50/50 print:hidden">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar por alumno, empresa o localidad..." 
+              className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all" 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+            />
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4 print:hidden">
         {placements.length === 0 ? (
           <div className="py-12 text-center text-zinc-500 bg-white rounded-2xl border border-dashed border-zinc-200">
             No hay prácticas asignadas todavía.
           </div>
+        ) : filteredPlacements.length === 0 ? (
+          <div className="py-12 text-center text-zinc-500 bg-white rounded-2xl border border-zinc-200 shadow-sm">
+            No se han encontrado resultados para tu búsqueda.
+          </div>
         ) : (
-          sortedPlacements.map(p => {
+          filteredPlacements.map(p => {
             const student = students.find(s => s.id === p.studentId);
             const company = companies.find(c => c.id === p.companyId);
             
@@ -283,13 +402,53 @@ export const Placements: React.FC = () => {
                   
                   <ArrowRight className="hidden md:block text-zinc-300" />
                   
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-primary-700">{company.name}</h3>
-                    <p className="text-sm text-zinc-500">{company.location}</p>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-primary-700">{company.name}</h3>
+                      <p className="text-sm text-zinc-500">{company.location}</p>
+                    </div>
                   </div>
-                </div>
+                  
+                  {/* Documentation Status */}
+                  <div className="w-full lg:w-48 flex flex-col gap-2 bg-zinc-50/50 p-3 rounded-xl border border-zinc-100">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-1">Documentación</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: 'A1', file: p.anexoA1 },
+                        { label: 'A2', file: p.anexoA2 },
+                        { label: 'A3', file: p.anexoA3 }
+                      ].map((anexo, i) => (
+                        <div key={i} className="group/doc relative">
+                          {anexo.file ? (
+                            <a 
+                              href={anexo.file} 
+                              download={`Anexo_${anexo.label}_${student.lastName}.pdf`}
+                              className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                              title={`Descargar ${anexo.label}`}
+                            >
+                              <FileText size={14} />
+                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+                            </a>
+                          ) : (
+                            <div 
+                              className={`w-8 h-8 rounded-lg bg-zinc-100 text-zinc-400 flex items-center justify-center border border-zinc-200 ${anexo.label === 'A1' ? 'opacity-50' : ''}`}
+                              title={`${anexo.label} pendiente`}
+                            >
+                              <FileText size={14} />
+                            </div>
+                          )}
+                          <span className="text-[9px] font-bold text-zinc-500 mt-0.5 block text-center">{anexo.label}</span>
+                        </div>
+                      ))}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${p.allSigned ? 'bg-primary-50 text-primary-600 border-primary-100' : 'bg-zinc-100 text-zinc-400 border-zinc-200'}`} title={p.allSigned ? 'Firmado' : 'Pendiente de firma'}>
+                          <FileCheck size={14} />
+                        </div>
+                        <span className="text-[9px] font-bold text-zinc-500 mt-0.5 block text-center">Firma</span>
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto bg-zinc-50 p-4 rounded-xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto bg-zinc-50 p-4 rounded-xl">
                   <div className="space-y-1">
                     <div className="flex items-center text-sm font-medium text-zinc-700">
                       <Clock size={16} className="mr-2 text-zinc-400" />
@@ -333,7 +492,7 @@ export const Placements: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {sortedPlacements.map(p => {
+          {filteredPlacements.map(p => {
             const student = students.find(s => s.id === p.studentId);
             const company = companies.find(c => c.id === p.companyId);
             if (!student || !company) return null;

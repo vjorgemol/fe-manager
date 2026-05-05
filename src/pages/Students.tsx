@@ -16,7 +16,7 @@ export const Students: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
   const [search, setSearch] = useState('');
   
   // Estados para la lógica de importación/exportación
@@ -224,7 +224,7 @@ export const Students: React.FC = () => {
    * Prepara el formulario para editar un alumno existente.
    */
   const handleEdit = (student: any) => {
-    setFormData({ firstName: student.firstName, lastName: student.lastName, email: student.email, phone: student.phone || '', photoBase64: student.photoBase64 || '' });
+    setFormData({ firstName: student.firstName, lastName: student.lastName, email: student.email, phone: student.phone || '', photoBase64: student.photoBase64 || '', notes: student.notes || '' });
     setEditingId(student.id);
     setIsAdding(true);
     // Scroll suave hacia arriba para ver el formulario
@@ -235,7 +235,7 @@ export const Students: React.FC = () => {
    * Resetea el formulario y limpia estados de edición.
    */
   const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '' });
+    setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
     setEditingId(null);
     setIsAdding(false);
   };
@@ -316,6 +316,16 @@ export const Students: React.FC = () => {
                 {formData.photoBase64 && <img src={formData.photoBase64} alt="Preview" className="w-12 h-12 rounded-full object-cover border border-zinc-200 shadow-sm" />}
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer" />
               </div>
+            </div>
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Notas / Indicaciones (Opcional)</label>
+              <textarea 
+                rows={3} 
+                placeholder="Añade cualquier observación relevante sobre el alumno..." 
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-y" 
+                value={formData.notes} 
+                onChange={e => setFormData({...formData, notes: e.target.value})} 
+              />
             </div>
             <div className="md:col-span-3 flex justify-end mt-2">
               <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">{editingId ? 'Actualizar' : 'Guardar'}</button>
@@ -404,6 +414,12 @@ export const Students: React.FC = () => {
               <h3 className="text-2xl font-bold text-zinc-900">{viewingStudent.firstName} {viewingStudent.lastName}</h3>
               <p className="text-zinc-500 font-medium mt-1">{viewingStudent.email}</p>
               {viewingStudent.phone && <p className="text-zinc-500 font-medium mt-1 flex items-center justify-center gap-2"><span className="text-zinc-400">Tel:</span><a href={`tel:${viewingStudent.phone}`} className="text-primary-600 hover:underline">{viewingStudent.phone}</a></p>}
+              {viewingStudent.notes && (
+                <div className="mt-4 w-full text-left bg-amber-50 border border-amber-100 rounded-xl p-3">
+                  <span className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Notas</span>
+                  <p className="text-sm text-amber-900 whitespace-pre-wrap">{viewingStudent.notes}</p>
+                </div>
+              )}
             </div>
             <div className="p-6 bg-zinc-50/50 flex flex-col gap-3">
               <a href={`mailto:${viewingStudent.email}`} className="w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3.5 rounded-xl font-medium flex items-center justify-center shadow-md"><Mail size={20} className="mr-2" /> Enviar Correo</a>

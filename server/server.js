@@ -77,8 +77,8 @@ app.post('/api/import', async (req, res) => {
 
     // Insert new data
     for (const s of students) {
-      await run(`INSERT INTO students (id, firstName, lastName, email, academicYear, photoBase64, phone) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-        [s.id, s.firstName, s.lastName, s.email, s.academicYear || null, s.photoBase64 || null, s.phone || null]);
+      await run(`INSERT INTO students (id, firstName, lastName, email, academicYear, photoBase64, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [s.id, s.firstName, s.lastName, s.email, s.academicYear || null, s.photoBase64 || null, s.phone || null, s.notes || null]);
     }
 
     for (const c of companies) {
@@ -87,8 +87,8 @@ app.post('/api/import', async (req, res) => {
     }
 
     for (const p of placements) {
-      await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [p.id, p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status || 'pending', p.academicYear || null, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null]);
+      await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, allSigned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [p.id, p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status || 'pending', p.academicYear || null, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null, p.anexoA1 || null, p.anexoA2 || null, p.anexoA3 || null, p.allSigned ? 1 : 0]);
     }
     
     if (teachers) {
@@ -113,15 +113,15 @@ app.get('/api/students', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   const s = req.body;
-  await run(`INSERT INTO students (id, firstName, lastName, email, academicYear, photoBase64, phone) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-    [s.id, s.firstName, s.lastName, s.email, s.academicYear || null, s.photoBase64 || null, s.phone || null]);
+  await run(`INSERT INTO students (id, firstName, lastName, email, academicYear, photoBase64, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+    [s.id, s.firstName, s.lastName, s.email, s.academicYear || null, s.photoBase64 || null, s.phone || null, s.notes || null]);
   res.json({ success: true });
 });
 
 app.put('/api/students/:id', async (req, res) => {
   const s = req.body;
-  await run(`UPDATE students SET firstName=?, lastName=?, email=?, academicYear=?, photoBase64=?, phone=? WHERE id=?`, 
-    [s.firstName, s.lastName, s.email, s.academicYear || null, s.photoBase64 || null, s.phone || null, req.params.id]);
+  await run(`UPDATE students SET firstName=?, lastName=?, email=?, academicYear=?, photoBase64=?, phone=?, notes=? WHERE id=?`, 
+    [s.firstName, s.lastName, s.email, s.academicYear || null, s.photoBase64 || null, s.phone || null, s.notes || null, req.params.id]);
   res.json({ success: true });
 });
 
@@ -184,15 +184,15 @@ app.get('/api/placements', async (req, res) => {
 
 app.post('/api/placements', async (req, res) => {
   const p = req.body;
-  await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-    [p.id, p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status || 'pending', p.academicYear || null, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null]);
+  await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, allSigned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+    [p.id, p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status || 'pending', p.academicYear || null, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null, p.anexoA1 || null, p.anexoA2 || null, p.anexoA3 || null, p.allSigned ? 1 : 0]);
   res.json({ success: true });
 });
 
 app.put('/api/placements/:id', async (req, res) => {
   const p = req.body;
-  await run(`UPDATE placements SET studentId=?, companyId=?, hours=?, startDate=?, endDate=?, status=?, academicYear=?, startEmailSent=?, endEmailSent=?, teacherId=? WHERE id=?`, 
-    [p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status || 'pending', p.academicYear || null, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null, req.params.id]);
+  await run(`UPDATE placements SET studentId=?, companyId=?, hours=?, startDate=?, endDate=?, status=?, academicYear=?, startEmailSent=?, endEmailSent=?, teacherId=?, anexoA1=?, anexoA2=?, anexoA3=?, allSigned=? WHERE id=?`, 
+    [p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status || 'pending', p.academicYear || null, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null, p.anexoA1 || null, p.anexoA2 || null, p.anexoA3 || null, p.allSigned ? 1 : 0, req.params.id]);
   res.json({ success: true });
 });
 

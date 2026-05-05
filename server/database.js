@@ -26,6 +26,9 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'phone')) {
         db.run("ALTER TABLE students ADD COLUMN phone TEXT");
       }
+      if (!columns.some(c => c.name === 'notes')) {
+        db.run("ALTER TABLE students ADD COLUMN notes TEXT");
+      }
     }
   });
 
@@ -70,6 +73,18 @@ db.serialize(() => {
       }
       if (!columns.some(c => c.name === 'teacherId')) {
         db.run("ALTER TABLE placements ADD COLUMN teacherId TEXT");
+      }
+      if (!columns.some(c => c.name === 'anexoA1')) {
+        db.run("ALTER TABLE placements ADD COLUMN anexoA1 TEXT");
+      }
+      if (!columns.some(c => c.name === 'anexoA2')) {
+        db.run("ALTER TABLE placements ADD COLUMN anexoA2 TEXT");
+      }
+      if (!columns.some(c => c.name === 'anexoA3')) {
+        db.run("ALTER TABLE placements ADD COLUMN anexoA3 TEXT");
+      }
+      if (!columns.some(c => c.name === 'allSigned')) {
+        db.run("ALTER TABLE placements ADD COLUMN allSigned INTEGER DEFAULT 0");
       }
     }
   });

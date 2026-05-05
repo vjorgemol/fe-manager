@@ -6,6 +6,7 @@ export interface Student {
   academicYear?: string;
   photoBase64?: string;
   phone?: string;
+  notes?: string;
 }
 
 export interface Company {
@@ -42,4 +43,8 @@ export interface Placement {
   startEmailSent?: boolean;
   endEmailSent?: boolean;
   teacherId?: string;
+  anexoA1?: string;
+  anexoA2?: string;
+  anexoA3?: string;
+  allSigned?: boolean;
 }
