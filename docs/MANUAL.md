@@ -67,8 +67,8 @@ Lleva el control de los documentos oficiales (A1, A2, A3) directamente desde la 
 
 Ahorra tiempo enviando correos personalizados con un solo clic. El sistema genera borradores automáticos para:
 *   **Prospección**: Presentar el ciclo a nuevas empresas.
-*   **Inicio de FCT**: Enviar los datos del alumno asignado a la empresa.
-*   **Fin de FCT**: Recordar la entrega de documentación al finalizar las prácticas.
+*   **Inicio de la FE**: Enviar los datos del alumno asignado a la empresa.
+*   **Fin de la FE**: Recordar la entrega de documentación al finalizar las prácticas.
 
 ### Personalización de Plantillas
 Puedes editar el texto de estos correos en **Ajustes > Plantillas de Email**. El sistema permite usar variables entre llaves (ej: `{studentName}`, `{companyName}`) que se sustituirán por los datos reales al generar el correo.
