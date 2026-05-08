@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 /**
@@ -26,7 +27,8 @@ export const Companies: React.FC = () => {
     phone: '' 
   });
   
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('q') || '');
 
   // Estados para la importación CSV
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);

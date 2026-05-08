@@ -1,15 +1,42 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { Users, Building2, Briefcase, AlertCircle } from 'lucide-react';
+import { Users, Building2, Briefcase, AlertCircle, Search as SearchIcon, ArrowRight } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 
 export const Dashboard: React.FC = () => {
   const { students, companies, placements, reminderDays } = useData();
   const navigate = useNavigate();
+  const [globalSearch, setGlobalSearch] = React.useState('');
 
   const activePlacements = placements.filter(p => p.status === 'active').length;
   const pendingPlacements = placements.filter(p => p.status === 'pending').length;
+
+  const searchResults = React.useMemo(() => {
+    if (!globalSearch.trim()) return null;
+    const q = globalSearch.toLowerCase();
+
+    const matchedStudents = students.filter(s => 
+      (s.firstName || '').toLowerCase().includes(q) || 
+      (s.lastName || '').toLowerCase().includes(q) || 
+      (s.email || '').toLowerCase().includes(q)
+    ).slice(0, 3);
+
+    const matchedCompanies = companies.filter(c => 
+      (c.name || '').toLowerCase().includes(q) || 
+      (c.location || '').toLowerCase().includes(q) || 
+      (c.contactPerson || '').toLowerCase().includes(q)
+    ).slice(0, 3);
+
+    const matchedPlacements = placements.filter(p => {
+      const student = students.find(s => s.id === p.studentId);
+      const company = companies.find(c => c.id === p.companyId);
+      return (student && (`${student.firstName || ''} ${student.lastName || ''}`).toLowerCase().includes(q)) || 
+             (company && (company.name || '').toLowerCase().includes(q));
+    }).slice(0, 3);
+
+    return { students: matchedStudents, companies: matchedCompanies, placements: matchedPlacements };
+  }, [globalSearch, students, companies, placements]);
 
   const getUpcomingEvents = () => {
     const today = new Date();
@@ -38,10 +65,81 @@ export const Dashboard: React.FC = () => {
   const upcomingEvents = getUpcomingEvents();
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Dashboard</h2>
-        <p className="text-zinc-500 mt-2">Resumen de la gestión de FEs.</p>
+    <div className="space-y-8 animate-in fade-in duration-500" onClick={() => setGlobalSearch('')}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-30">
+        <div>
+          <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Dashboard</h2>
+          <p className="text-zinc-500 mt-2">Resumen de la gestión de FEs.</p>
+        </div>
+        
+        <div className="w-full md:w-96 relative" onClick={e => e.stopPropagation()}>
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-5 h-5" />
+            <input 
+              type="text" 
+              placeholder="Buscar alumnos, empresas, prácticas..." 
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-shadow shadow-sm"
+            />
+          </div>
+          
+          {searchResults && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-zinc-200 overflow-hidden z-50">
+              {searchResults.students.length > 0 && (
+                <div className="p-2 border-b border-zinc-100">
+                  <div className="text-xs font-semibold text-zinc-500 uppercase px-3 py-1 mb-1">Alumnos</div>
+                  {searchResults.students.map(s => (
+                    <button key={s.id} onClick={() => navigate(`/students?q=${s.firstName}`)} className="w-full text-left px-3 py-2 hover:bg-zinc-50 rounded-lg flex items-center justify-between group">
+                      <div>
+                        <p className="font-medium text-zinc-900">{s.firstName} {s.lastName}</p>
+                        <p className="text-sm text-zinc-500">{s.email}</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-zinc-300 group-hover:text-primary-500" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchResults.companies.length > 0 && (
+                <div className="p-2 border-b border-zinc-100">
+                  <div className="text-xs font-semibold text-zinc-500 uppercase px-3 py-1 mb-1">Empresas</div>
+                  {searchResults.companies.map(c => (
+                    <button key={c.id} onClick={() => navigate(`/companies?q=${c.name}`)} className="w-full text-left px-3 py-2 hover:bg-zinc-50 rounded-lg flex items-center justify-between group">
+                      <div>
+                        <p className="font-medium text-zinc-900">{c.name}</p>
+                        <p className="text-sm text-zinc-500">{c.location}</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-zinc-300 group-hover:text-primary-500" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchResults.placements.length > 0 && (
+                <div className="p-2">
+                  <div className="text-xs font-semibold text-zinc-500 uppercase px-3 py-1 mb-1">Prácticas</div>
+                  {searchResults.placements.map(p => {
+                    const student = students.find(s => s.id === p.studentId);
+                    const company = companies.find(c => c.id === p.companyId);
+                    return (
+                      <button key={p.id} onClick={() => navigate(`/placements?q=${student?.firstName}`)} className="w-full text-left px-3 py-2 hover:bg-zinc-50 rounded-lg flex items-center justify-between group">
+                        <div>
+                          <p className="font-medium text-zinc-900">{student?.firstName} {student?.lastName}</p>
+                          <p className="text-sm text-zinc-500">en {company?.name}</p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-zinc-300 group-hover:text-primary-500" />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {searchResults.students.length === 0 && searchResults.companies.length === 0 && searchResults.placements.length === 0 && (
+                <div className="p-4 text-center text-zinc-500">
+                  No se encontraron resultados para "{globalSearch}"
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

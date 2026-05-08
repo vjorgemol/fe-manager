@@ -4,6 +4,7 @@ import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mai
 import type { PlacementStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useSearchParams } from 'react-router-dom';
 
 export const Placements: React.FC = () => {
   const { placements, students, companies, teachers, schoolName, academicYear, tutorName, tutorEmail, addPlacement, deletePlacement, updatePlacement } = useData();
@@ -11,7 +12,10 @@ export const Placements: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [remindA3PlacementId, setRemindA3PlacementId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('q') || '');
+  
   const [companySearch, setCompanySearch] = useState('');
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   

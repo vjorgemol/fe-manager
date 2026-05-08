@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Search, Edit, Mail, X, UploadCloud, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import type { Student } from '../types';
 
@@ -17,7 +18,9 @@ export const Students: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
-  const [search, setSearch] = useState('');
+  
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('q') || '');
   
   // Estados para la lógica de importación/exportación
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
