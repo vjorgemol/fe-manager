@@ -45,12 +45,21 @@ Para cada curso académico, puedes marcar a las empresas como:
 
 ## 💼 Asignación de Prácticas (Placements)
 
-Aquí es donde conectas a los alumnos con las empresas.
+Aquí es donde conectas a los alumnos con las empresas. Esta sección te permite buscar, asignar y gestionar toda la documentación relacionada.
 
-1.  Pulsa en **"Asignar Práctica"**.
-2.  Selecciona al alumno y la empresa.
-3.  Indica las fechas de inicio, fin y el total de horas.
-4.  Asigna un **Tutor/Profesor** para el seguimiento.
+### Creación y Búsqueda
+1.  Pulsa en **"Nueva Asignación"**.
+2.  Selecciona al alumno y usa el buscador desplegable integrado para encontrar rápidamente a la empresa.
+3.  Indica las fechas de inicio, fin, el total de horas y su estado.
+4.  Asigna un **Profesor Responsable** para el seguimiento.
+*   **Buscador**: Puedes usar la barra de búsqueda principal para localizar rápidamente cualquier práctica por el nombre del alumno, la empresa o su localidad.
+
+### Gestión de Documentación (Anexos)
+Lleva el control de los documentos oficiales (A1, A2, A3) directamente desde la ficha:
+*   **Subida de PDFs**: Adjunta los documentos escaneados o firmados digitalmente.
+*   **Descarga**: Pulsa sobre el icono de un documento subido para descargarlo.
+*   **Aviso de Firma (Anexo A3)**: Si el alumno aún no ha entregado el Anexo A3, puedes hacer clic en su botón gris para generar automáticamente un correo de recordatorio solicitando la firma. *(Importante: El archivo PDF deberás adjuntarlo tú manualmente en tu cliente de correo)*.
+*   **Control Global**: Marca la casilla "Firma" para llevar un registro rápido de si todos los documentos están ya debidamente firmados.
 
 ---
 
