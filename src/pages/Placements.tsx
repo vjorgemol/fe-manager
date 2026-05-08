@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck } from 'lucide-react';
+import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud } from 'lucide-react';
 import type { PlacementStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -14,6 +14,11 @@ export const Placements: React.FC = () => {
   const [search, setSearch] = useState('');
   const [companySearch, setCompanySearch] = useState('');
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  
+  // CSV Import States
+  const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ placements: any[], skipped: number } | null>(null);
+  const csvInputRef = React.useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -140,6 +145,128 @@ export const Placements: React.FC = () => {
     return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${styles[status]}`}>{labels[status]}</span>;
   };
 
+  const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportResult(null);
+    setPendingImport(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+        
+        if (lines.length < 2) {
+          setImportResult({ count: 0, skipped: 0, error: 'El archivo está vacío o solo contiene la cabecera.' });
+          return;
+        }
+
+        const splitCSVLine = (line: string, sep: string) => {
+          const result = [];
+          let curValue = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === sep && !inQuotes) {
+              result.push(curValue.trim());
+              curValue = '';
+            } else curValue += char;
+          }
+          result.push(curValue.trim());
+          return result;
+        };
+
+        const header = lines[0];
+        const separator = header.includes(';') ? ';' : ',';
+        const headers = splitCSVLine(header, separator).map(h => h.toLowerCase());
+        
+        const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('correo'));
+        const companyIdx = headers.findIndex(h => h.includes('empresa'));
+        const hoursIdx = headers.findIndex(h => h.includes('horas'));
+        const startIdx = headers.findIndex(h => h.includes('inicio') || h.includes('fecha'));
+        const endIdx = headers.findIndex(h => h.includes('fin'));
+        const statusIdx = headers.findIndex(h => h.includes('estado'));
+
+        if (emailIdx === -1 || companyIdx === -1) {
+          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener al menos: Email Alumno y Empresa.' });
+          return;
+        }
+
+        const toImport: any[] = [];
+        let skipped = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = splitCSVLine(lines[i], separator);
+          if (values.length < 2) continue;
+
+          const email = values[emailIdx];
+          const companyName = values[companyIdx];
+          const hours = hoursIdx !== -1 && values[hoursIdx] ? parseInt(values[hoursIdx]) : 380;
+          const startDate = startIdx !== -1 && values[startIdx] ? values[startIdx] : '';
+          const endDate = endIdx !== -1 && values[endIdx] ? values[endIdx] : '';
+          let statusStr = statusIdx !== -1 && values[statusIdx] ? values[statusIdx].toLowerCase() : 'pending';
+          
+          let status: PlacementStatus = 'pending';
+          if (statusStr.includes('activa') || statusStr.includes('curso')) status = 'active';
+          if (statusStr.includes('finalizada') || statusStr.includes('completada')) status = 'completed';
+          if (statusStr.includes('cancelada')) status = 'cancelled';
+
+          if (email && companyName) {
+            const student = students.find(s => s.email.toLowerCase() === email.toLowerCase());
+            const company = companies.find(c => c.name.toLowerCase() === companyName.toLowerCase());
+
+            if (student && company) {
+              // Check for duplicate placement (same student and company)
+              const isDuplicate = placements.some(p => p.studentId === student.id && p.companyId === company.id);
+
+              if (!isDuplicate) {
+                toImport.push({
+                  studentId: student.id,
+                  companyId: company.id,
+                  hours: isNaN(hours) ? 380 : hours,
+                  startDate,
+                  endDate,
+                  status,
+                  teacherId: '',
+                  anexoA1: '',
+                  anexoA2: '',
+                  anexoA3: '',
+                  allSigned: false,
+                  a3EmailSent: false
+                });
+              } else {
+                skipped++;
+              }
+            } else {
+              skipped++; // Skip if student or company not found
+            }
+          }
+        }
+        
+        if (toImport.length > 0 || skipped > 0) {
+          setPendingImport({ placements: toImport, skipped });
+        } else {
+          setImportResult({ count: 0, skipped: 0, error: 'No se encontraron datos válidos en el archivo.' });
+        }
+      } catch (err: any) {
+        setImportResult({ count: 0, skipped: 0, error: `Error: ${err.message}` });
+      }
+
+      if (csvInputRef.current) csvInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (!pendingImport) return;
+    pendingImport.placements.forEach(p => addPlacement(p));
+    setImportResult({ count: pendingImport.placements.length, skipped: pendingImport.skipped });
+    setPendingImport(null);
+  };
+
   const exportToCSV = () => {
     if (placements.length === 0) return;
     const headers = ['Alumno', 'Email Alumno', 'Teléfono Alumno', 'Profesor Responsable', 'Empresa', 'Localidad', 'Contacto Empresa', 'Email Empresa', 'Horas', 'Inicio', 'Fin', 'Estado'];
@@ -205,6 +332,15 @@ export const Placements: React.FC = () => {
           <button onClick={() => window.print()} className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm" title="Imprimir">
             <Printer size={18} className="sm:mr-2" />
             <span className="hidden sm:inline">Imprimir</span>
+          </button>
+          <input type="file" accept=".csv" ref={csvInputRef} className="hidden" onChange={handleCSVImport} />
+          <button 
+            onClick={() => csvInputRef.current?.click()}
+            className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
+            title="Importar CSV"
+          >
+            <UploadCloud size={18} className="sm:mr-2" />
+            <span className="hidden sm:inline">Importar CSV</span>
           </button>
           <button onClick={exportToCSV} className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm" title="CSV">
             <Download size={18} className="sm:mr-2" />
@@ -711,6 +847,52 @@ export const Placements: React.FC = () => {
                 Sí, enviar aviso
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirmación de Importación (Pre-check) */}
+      {pendingImport && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setPendingImport(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0"><UploadCloud size={24} /></div>
+              <h3 className="text-xl font-bold text-zinc-900">Confirmar importación</h3>
+            </div>
+            <div className="space-y-4 mb-8">
+              <p className="text-zinc-600 leading-relaxed">Se han analizado los datos del archivo y esto es lo que se va a procesar:</p>
+              <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2">
+                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Prácticas nuevas:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.placements.length}</span></div>
+                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">Omitidas (Ya registradas / Alumno o Empresa no encontrados):</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
+              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">Sí, importar todo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Resultado Final de Importación */}
+      {importResult && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setImportResult(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${importResult.error ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                {importResult.error ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />}
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? 'Error en la importación' : 'Importación completada'}</h3>
+            </div>
+            <p className="text-zinc-600 mb-8 leading-relaxed">
+              {importResult.error || (
+                <>
+                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'práctica' : 'prácticas'} correctamente.
+                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">({importResult.skipped} omitidas)</span>}
+                </>
+              )}
+            </p>
+            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">Entendido</button></div>
           </div>
         </div>
       )}

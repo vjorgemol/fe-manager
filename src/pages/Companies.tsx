@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Trash2, MapPin, Edit, Search, Phone, Download } from 'lucide-react';
+import { Plus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 /**
  * Componente para la gestión del directorio de empresas.
@@ -27,6 +27,127 @@ export const Companies: React.FC = () => {
   });
   
   const [search, setSearch] = useState('');
+
+  // Estados para la importación CSV
+  const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ companies: any[], skipped: number } | null>(null);
+  const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportResult(null);
+    setPendingImport(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+        
+        if (lines.length < 2) {
+          setImportResult({ count: 0, skipped: 0, error: 'El archivo está vacío o solo contiene la cabecera.' });
+          return;
+        }
+
+        const splitCSVLine = (line: string, sep: string) => {
+          const result = [];
+          let curValue = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === sep && !inQuotes) {
+              result.push(curValue.trim());
+              curValue = '';
+            } else curValue += char;
+          }
+          result.push(curValue.trim());
+          return result;
+        };
+
+        const header = lines[0];
+        const separator = header.includes(';') ? ';' : ',';
+        const headers = splitCSVLine(header, separator).map(h => h.toLowerCase());
+        
+        const nameIdx = headers.findIndex(h => h.includes('nombre') || h.includes('empresa'));
+        const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('correo'));
+        const locationIdx = headers.findIndex(h => h.includes('localidad') || h.includes('población') || h.includes('poblacion') || h.includes('ciudad') || h.includes('municipio'));
+        const addressIdx = headers.findIndex(h => h.includes('dirección') || h.includes('direccion'));
+        const contactPersonIdx = headers.findIndex(h => h.includes('contacto') || h.includes('persona'));
+        const phoneIdx = headers.findIndex(h => h.includes('teléfono') || h.includes('telefono'));
+
+        if (nameIdx === -1 || locationIdx === -1) {
+          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener al menos: Nombre y Localidad.' });
+          return;
+        }
+
+        const toImport: any[] = [];
+        let skipped = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = splitCSVLine(lines[i], separator);
+          if (values.length < 2) continue;
+
+          const name = values[nameIdx];
+          const location = values[locationIdx];
+          const email = emailIdx !== -1 ? values[emailIdx] : '';
+          const address = addressIdx !== -1 ? values[addressIdx] : '';
+          const contactPerson = contactPersonIdx !== -1 ? values[contactPersonIdx] : '';
+          const phone = phoneIdx !== -1 ? values[phoneIdx] : '';
+
+          if (name && location) {
+            // Check duplicates by exact name or email
+            const isDuplicate = companies.some(c => 
+              c.name.toLowerCase() === name.toLowerCase() || 
+              (email && c.email.toLowerCase() === email.toLowerCase())
+            );
+
+            if (!isDuplicate) {
+              toImport.push({ 
+                name, 
+                location, 
+                email, 
+                address, 
+                contactPerson, 
+                phone,
+                collaborationStatus: 'none',
+                inactiveEmail: false
+              });
+            } else {
+              skipped++;
+            }
+          }
+        }
+        
+        if (toImport.length > 0 || skipped > 0) {
+          setPendingImport({ companies: toImport, skipped });
+        } else {
+          setImportResult({ count: 0, skipped: 0, error: 'No se encontraron datos válidos en el archivo.' });
+        }
+      } catch (err: any) {
+        setImportResult({ count: 0, skipped: 0, error: `Error: ${err.message}` });
+      }
+
+      if (csvInputRef.current) csvInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (!pendingImport) return;
+    pendingImport.companies.forEach(c => {
+      addCompany({
+        ...c,
+        prospectingYears: '',
+        acceptedYears: '',
+        rejectedYears: ''
+      });
+    });
+    setImportResult({ count: pendingImport.companies.length, skipped: pendingImport.skipped });
+    setPendingImport(null);
+  };
 
   /**
    * Gestiona el envío del formulario.
@@ -160,6 +281,14 @@ export const Companies: React.FC = () => {
           <p className="text-zinc-500 mt-2">Directorio de empresas colaboradoras.</p>
         </div>
         <div className="flex gap-3">
+          <input type="file" accept=".csv" ref={csvInputRef} className="hidden" onChange={handleCSVImport} />
+          <button 
+            onClick={() => csvInputRef.current?.click()}
+            className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
+          >
+            <UploadCloud size={20} className="sm:mr-2" />
+            <span className="hidden sm:inline">Importar CSV</span>
+          </button>
           <button 
             onClick={exportToCSV}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
@@ -341,6 +470,52 @@ export const Companies: React.FC = () => {
               <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
               <button onClick={() => { deleteCompany(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors flex items-center">Sí, eliminar</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirmación de Importación (Pre-check) */}
+      {pendingImport && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setPendingImport(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0"><UploadCloud size={24} /></div>
+              <h3 className="text-xl font-bold text-zinc-900">Confirmar importación</h3>
+            </div>
+            <div className="space-y-4 mb-8">
+              <p className="text-zinc-600 leading-relaxed">Se han analizado los datos del archivo y esto es lo que se va a procesar:</p>
+              <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2">
+                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Empresas nuevas:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.companies.length}</span></div>
+                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">Ya registradas (se omitirán):</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
+              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">Sí, importar todo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Resultado Final de Importación */}
+      {importResult && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setImportResult(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${importResult.error ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                {importResult.error ? <AlertTriangle size={24} /> : <CheckCircle2 size={24} />}
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? 'Error en la importación' : 'Importación completada'}</h3>
+            </div>
+            <p className="text-zinc-600 mb-8 leading-relaxed">
+              {importResult.error || (
+                <>
+                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'empresa' : 'empresas'} correctamente.
+                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">({importResult.skipped} omitidas por estar ya registradas)</span>}
+                </>
+              )}
+            </p>
+            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">Entendido</button></div>
           </div>
         </div>
       )}
