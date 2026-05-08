@@ -683,7 +683,11 @@ export const Placements: React.FC = () => {
               </div>
             )}
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Deseas enviar un correo electrónico al alumno para recordarle que debe firmar y entregar el Anexo A3?
+              ¿Deseas enviar un correo electrónico al alumno para enviarle el Anexo A3 y solicitar su firma?
+              <br/><br/>
+              <span className="bg-amber-50 text-amber-800 p-3 rounded-lg border border-amber-200 block text-sm">
+                <strong>Nota:</strong> Se abrirá tu cliente de correo. <strong>Recuerda adjuntar el archivo PDF del Anexo A3 manualmente</strong> antes de enviar el mensaje. Los navegadores web no permiten adjuntar archivos automáticamente por motivos de seguridad.
+              </span>
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setRemindA3PlacementId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
@@ -693,8 +697,8 @@ export const Placements: React.FC = () => {
                 const p = placements.find(p => p.id === remindA3PlacementId);
                 const student = students.find(s => s.id === p?.studentId);
                 if (student?.email) {
-                  const subject = encodeURIComponent(`Recordatorio: Firma del Anexo A3 - Curso ${academicYear}`);
-                  const body = encodeURIComponent(`Hola ${student.firstName},\n\nTe recordamos que tienes pendiente firmar y entregar el Anexo A3 de tus prácticas.\n\nPor favor, revísalo y entrégalo lo antes posible.\n\nUn saludo,\n${tutorName}\n${schoolName}`);
+                  const subject = encodeURIComponent(`Firma del Anexo A3 - Curso ${academicYear}`);
+                  const body = encodeURIComponent(`Hola ${student.firstName},\n\nTe adjunto el Anexo A3 de tus prácticas.\n\nPor favor, revísalo, fírmalo y entrégalo lo antes posible para poder formalizar la documentación.\n\nUn saludo,\n${tutorName}\n${schoolName}`);
                   window.location.href = `mailto:${student.email}?subject=${subject}&body=${body}`;
                   if (p) {
                     updatePlacement({...p, a3EmailSent: true});
