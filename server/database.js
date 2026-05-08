@@ -86,6 +86,15 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'allSigned')) {
         db.run("ALTER TABLE placements ADD COLUMN allSigned INTEGER DEFAULT 0");
       }
+      if (!columns.some(c => c.name === 'a3EmailSent')) {
+        db.run("ALTER TABLE placements ADD COLUMN a3EmailSent INTEGER DEFAULT 0");
+      }
+      if (!columns.some(c => c.name === 'a2Signed')) {
+        db.run("ALTER TABLE placements ADD COLUMN a2Signed INTEGER DEFAULT 0");
+      }
+      if (!columns.some(c => c.name === 'a3Signed')) {
+        db.run("ALTER TABLE placements ADD COLUMN a3Signed INTEGER DEFAULT 0");
+      }
     }
   });
 

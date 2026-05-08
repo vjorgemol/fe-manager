@@ -10,7 +10,10 @@ export const Placements: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [remindA3PlacementId, setRemindA3PlacementId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -48,6 +51,10 @@ export const Placements: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.companyId) {
+      alert("Por favor, busca y selecciona una empresa de la lista.");
+      return;
+    }
     if (editingId) {
       const original = placements.find(p => p.id === editingId);
       updatePlacement({ ...original, ...formData, id: editingId } as any);
@@ -71,6 +78,7 @@ export const Placements: React.FC = () => {
       anexoA3: placement.anexoA3 || '',
       allSigned: !!placement.allSigned
     });
+    setCompanySearch('');
     setEditingId(placement.id);
     setIsAdding(true);
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -90,6 +98,7 @@ export const Placements: React.FC = () => {
       anexoA3: '',
       allSigned: false
     });
+    setCompanySearch('');
     setEditingId(null);
     setIsAdding(false);
   };
@@ -241,12 +250,48 @@ export const Placements: React.FC = () => {
                 {availableStudents.map(s => <option key={s.id} value={s.id}>{s.lastName}, {s.firstName}</option>)}
               </select>
             </div>
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-zinc-700 mb-1">Empresa</label>
-              <select required className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})}>
-                <option value="">Seleccionar empresa...</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name} ({c.location})</option>)}
-              </select>
+              <div 
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus-within:ring-2 focus-within:ring-primary-500 outline-none flex items-center"
+              >
+                <input 
+                  type="text" 
+                  className="bg-transparent outline-none w-full" 
+                  placeholder="Buscar empresa..." 
+                  value={companySearch || (formData.companyId ? companies.find(c => c.id === formData.companyId)?.name : '') || ''}
+                  onChange={e => {
+                    setCompanySearch(e.target.value);
+                    setFormData({...formData, companyId: ''});
+                    setIsCompanyDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsCompanyDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsCompanyDropdownOpen(false), 200)}
+                />
+              </div>
+              {isCompanyDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-zinc-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {companies
+                    .filter(c => c.name.toLowerCase().includes(companySearch.toLowerCase()) || c.location.toLowerCase().includes(companySearch.toLowerCase()))
+                    .map(c => (
+                      <div 
+                        key={c.id} 
+                        className="px-4 py-2 hover:bg-zinc-50 cursor-pointer border-b border-zinc-100 last:border-0"
+                        onClick={() => {
+                          setFormData({...formData, companyId: c.id});
+                          setCompanySearch('');
+                          setIsCompanyDropdownOpen(false);
+                        }}
+                      >
+                        <div className="font-medium text-zinc-900">{c.name}</div>
+                        <div className="text-xs text-zinc-500">{c.location}</div>
+                      </div>
+                  ))}
+                  {companies.filter(c => c.name.toLowerCase().includes(companySearch.toLowerCase()) || c.location.toLowerCase().includes(companySearch.toLowerCase())).length === 0 && (
+                    <div className="px-4 py-3 text-sm text-zinc-500 text-center">No se encontraron empresas</div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Horas Totales</label>
@@ -283,36 +328,72 @@ export const Placements: React.FC = () => {
                   Anexo A1 (Opcional)
                   {formData.anexoA1 && <CheckCircle2 size={16} className="text-emerald-500" />}
                 </label>
-                <input 
-                  type="file" 
-                  accept="application/pdf"
-                  className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
-                  onChange={e => handleFileChange(e, 'anexoA1')}
-                />
+                {formData.anexoA1 ? (
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+                    <span className="text-sm text-emerald-700 font-medium flex items-center">
+                      <FileCheck size={16} className="mr-2" />
+                      Documento subido
+                    </span>
+                    <button type="button" onClick={() => setFormData({...formData, anexoA1: ''})} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Eliminar documento">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                    onChange={e => handleFileChange(e, 'anexoA1')}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
                   Anexo A2
                   {formData.anexoA2 && <CheckCircle2 size={16} className="text-emerald-500" />}
                 </label>
-                <input 
-                  type="file" 
-                  accept="application/pdf"
-                  className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
-                  onChange={e => handleFileChange(e, 'anexoA2')}
-                />
+                {formData.anexoA2 ? (
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+                    <span className="text-sm text-emerald-700 font-medium flex items-center">
+                      <FileCheck size={16} className="mr-2" />
+                      Documento subido
+                    </span>
+                    <button type="button" onClick={() => setFormData({...formData, anexoA2: ''})} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Eliminar documento">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                    onChange={e => handleFileChange(e, 'anexoA2')}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
                   Anexo A3
                   {formData.anexoA3 && <CheckCircle2 size={16} className="text-emerald-500" />}
                 </label>
-                <input 
-                  type="file" 
-                  accept="application/pdf"
-                  className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
-                  onChange={e => handleFileChange(e, 'anexoA3')}
-                />
+                {formData.anexoA3 ? (
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+                    <span className="text-sm text-emerald-700 font-medium flex items-center">
+                      <FileCheck size={16} className="mr-2" />
+                      Documento subido
+                    </span>
+                    <button type="button" onClick={() => setFormData({...formData, anexoA3: ''})} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Eliminar documento">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                    onChange={e => handleFileChange(e, 'anexoA3')}
+                  />
+                )}
               </div>
             </div>
 
@@ -429,12 +510,16 @@ export const Placements: React.FC = () => {
                               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
                             </a>
                           ) : (
-                            <div 
-                              className={`w-8 h-8 rounded-lg bg-zinc-100 text-zinc-400 flex items-center justify-center border border-zinc-200 ${anexo.label === 'A1' ? 'opacity-50' : ''}`}
-                              title={`${anexo.label} pendiente`}
+                            <button 
+                              onClick={() => {
+                                if (anexo.label === 'A3') setRemindA3PlacementId(p.id);
+                              }}
+                              disabled={anexo.label !== 'A3'}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-colors ${anexo.label === 'A3' ? 'bg-zinc-100 text-zinc-400 border-zinc-200 hover:bg-amber-50 hover:text-amber-500 hover:border-amber-200 cursor-pointer' : 'bg-zinc-100 text-zinc-400 border-zinc-200'} ${anexo.label === 'A1' ? 'opacity-50' : ''}`}
+                              title={`${anexo.label} pendiente${anexo.label === 'A3' ? ' - Clic para avisar al alumno' : ''}`}
                             >
                               <FileText size={14} />
-                            </div>
+                            </button>
                           )}
                           <span className="text-[9px] font-bold text-zinc-500 mt-0.5 block text-center">{anexo.label}</span>
                         </div>
@@ -576,6 +661,50 @@ export const Placements: React.FC = () => {
               </button>
               <button onClick={() => { deletePlacement(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors flex items-center">
                 Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {remindA3PlacementId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setRemindA3PlacementId(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+                <Mail size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">Avisar al alumno</h3>
+            </div>
+            {!!placements.find(p => p.id === remindA3PlacementId)?.a3EmailSent && (
+              <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl flex items-start gap-3 text-sm">
+                <AlertCircle size={20} className="shrink-0 text-blue-600 mt-0.5" />
+                <p><strong>Aviso:</strong> Ya has enviado un recordatorio de Anexo A3 a este alumno anteriormente.</p>
+              </div>
+            )}
+            <p className="text-zinc-600 mb-8 leading-relaxed">
+              ¿Deseas enviar un correo electrónico al alumno para recordarle que debe firmar y entregar el Anexo A3?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setRemindA3PlacementId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={() => { 
+                const p = placements.find(p => p.id === remindA3PlacementId);
+                const student = students.find(s => s.id === p?.studentId);
+                if (student?.email) {
+                  const subject = encodeURIComponent(`Recordatorio: Firma del Anexo A3 - Curso ${academicYear}`);
+                  const body = encodeURIComponent(`Hola ${student.firstName},\n\nTe recordamos que tienes pendiente firmar y entregar el Anexo A3 de tus prácticas.\n\nPor favor, revísalo y entrégalo lo antes posible.\n\nUn saludo,\n${tutorName}\n${schoolName}`);
+                  window.location.href = `mailto:${student.email}?subject=${subject}&body=${body}`;
+                  if (p) {
+                    updatePlacement({...p, a3EmailSent: true});
+                  }
+                } else {
+                  alert('El alumno no tiene un correo electrónico configurado.');
+                }
+                setRemindA3PlacementId(null); 
+              }} className="px-5 py-2.5 rounded-xl font-medium bg-amber-500 hover:bg-amber-600 text-white shadow-md transition-colors flex items-center">
+                Sí, enviar aviso
               </button>
             </div>
           </div>
