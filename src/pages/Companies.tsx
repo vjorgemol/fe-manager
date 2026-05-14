@@ -466,7 +466,7 @@ export const Companies: React.FC = () => {
               <h3 className="text-xl font-bold text-zinc-900">Eliminar empresa</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Estás seguro de que deseas eliminar esta empresa? Esta acción no se puede deshacer y <strong>eliminará también todas las prácticas asociadas</strong> a esta empresa.
+              ¿Estás seguro de que deseas eliminar esta empresa? Esta acción no se puede deshacer y <strong>eliminará también toda la formación asociada</strong> a esta empresa.
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>

@@ -6,7 +6,7 @@ import { es } from 'date-fns/locale';
 
 /**
  * Página de Comunicaciones.
- * Gestiona los avisos automáticos de inicio/fin de prácticas y la prospección de empresas.
+ * Gestiona los avisos automáticos de inicio/fin de formación y la prospección de empresas.
  */
 export const Communications: React.FC = () => {
   const { 
@@ -60,7 +60,7 @@ export const Communications: React.FC = () => {
   };
 
   /**
-   * Obtiene las prácticas que comienzan o terminan próximamente.
+   * Obtiene las formaciones que comienzan o terminan próximamente.
    */
   const getUpcomingPlacements = () => {
     return placements.filter(p => p.status === 'pending' || p.status === 'active')
@@ -105,7 +105,7 @@ export const Communications: React.FC = () => {
 
     return {
       to: comp.email,
-      subject: `Colaboración para prácticas de Formación Profesional - ${schoolName}`,
+      subject: `Colaboración para formación de Formación Profesional - ${schoolName}`,
       body
     };
   };
@@ -127,7 +127,7 @@ export const Communications: React.FC = () => {
 
       return {
         to: `${student.email}, ${company.email}`,
-        subject: `[FE] Inicio de Prácticas: ${student.firstName} ${student.lastName}`,
+        subject: `[FE] Inicio de Formación: ${student.firstName} ${student.lastName}`,
         body
       };
     } else {
@@ -140,7 +140,7 @@ export const Communications: React.FC = () => {
 
       return {
         to: `${student.email}, ${company.email}`,
-        subject: `[FE] Finalización de Prácticas: ${student.firstName} ${student.lastName}`,
+        subject: `[FE] Finalización de Formación: ${student.firstName} ${student.lastName}`,
         body
       };
     }

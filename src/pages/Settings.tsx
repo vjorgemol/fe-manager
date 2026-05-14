@@ -241,7 +241,7 @@ export const Settings: React.FC = () => {
       <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-zinc-900">Días de antelación para recordatorios</h3>
-          <p className="text-zinc-500 text-sm mt-1">Configura cuántos días antes del inicio/fin se mostrarán los avisos de prácticas en el Dashboard y Comunicaciones.</p>
+          <p className="text-zinc-500 text-sm mt-1">Configura cuántos días antes del inicio/fin se mostrarán los avisos de formación en el Dashboard y Comunicaciones.</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
           <input 
@@ -308,7 +308,7 @@ export const Settings: React.FC = () => {
       <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-zinc-900">Gestión de Profesores</h3>
-          <p className="text-zinc-500 text-sm mt-1">Añade los nombres de los profesores que gestionarán las prácticas.</p>
+          <p className="text-zinc-500 text-sm mt-1">Añade los nombres de los profesores que gestionarán la formación.</p>
         </div>
         <div className="flex flex-col gap-4 w-full md:w-auto min-w-[300px]">
           <div className="flex gap-2">
@@ -381,20 +381,20 @@ export const Settings: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">2. Aviso de Inicio de Prácticas</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">2. Aviso de Inicio de Formación</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm"
-              placeholder="Escribe la plantilla para avisar del inicio de las prácticas..."
+              placeholder="Escribe la plantilla para avisar del inicio de la formación..."
               value={templateStart}
               onChange={e => setTemplateStart(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">3. Aviso de Finalización de Prácticas</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">3. Aviso de Finalización de Formación</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm"
-              placeholder="Escribe la plantilla para avisar del fin de las prácticas..."
+              placeholder="Escribe la plantilla para avisar del fin de la formación..."
               value={templateEnd}
               onChange={e => setTemplateEnd(e.target.value)}
             />

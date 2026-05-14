@@ -10,7 +10,7 @@ export const Layout: React.FC = () => {
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/students', icon: Users, label: 'Alumnos' },
     { to: '/companies', icon: Building2, label: 'Empresas' },
-    { to: '/placements', icon: Briefcase, label: 'Prácticas' },
+    { to: '/placements', icon: Briefcase, label: 'Formación' },
     { to: '/communications', icon: Mail, label: 'Comunicaciones' },
     { to: '/settings', icon: SettingsIcon, label: 'Ajustes' },
   ];

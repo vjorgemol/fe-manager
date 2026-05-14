@@ -298,7 +298,7 @@ export const Placements: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `practicas_fe_${academicYear.replace('/', '_')}.csv`);
+    link.setAttribute('download', `formacion_fe_${academicYear.replace('/', '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -316,8 +316,8 @@ export const Placements: React.FC = () => {
       return;
     }
 
-    const subject = encodeURIComponent(`[FE] Recordatorio de Inicio de Prácticas - Curso ${academicYear}`);
-    const body = encodeURIComponent(`Hola a todos,\n\nOs escribimos desde ${schoolName} para recordaros que vuestro periodo de Formación en Empresas (prácticas) está a punto de comenzar.\n\nPor favor, recordad repasar toda la documentación necesaria y presentaros en vuestras empresas asignadas en la fecha de inicio acordada.\n\nSi tenéis alguna duda o surge alguna incidencia de última hora, podéis responder directamente a este correo.\n\n¡Mucho ánimo y aprovechad la experiencia!\n\nUn saludo,\n${tutorName}\n${schoolName}\n${tutorEmail}`);
+    const subject = encodeURIComponent(`[FE] Recordatorio de Inicio de Formación - Curso ${academicYear}`);
+    const body = encodeURIComponent(`Hola a todos,\n\nOs escribimos desde ${schoolName} para recordaros que vuestro periodo de Formación en Empresas está a punto de comenzar.\n\nPor favor, recordad repasar toda la documentación necesaria y presentaros en vuestras empresas asignadas en la fecha de inicio acordada.\n\nSi tenéis alguna duda o surge alguna incidencia de última hora, podéis responder directamente a este correo.\n\n¡Mucho ánimo y aprovechad la experiencia!\n\nUn saludo,\n${tutorName}\n${schoolName}\n${tutorEmail}`);
 
     window.location.href = `mailto:?bcc=${uniqueEmails.join(',')}&subject=${subject}&body=${body}`;
   };
@@ -327,7 +327,7 @@ export const Placements: React.FC = () => {
       <div className="flex justify-between items-end print:hidden">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Asignación de Prácticas</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Asignación de Formación</h2>
             <span className="bg-primary-100 text-primary-700 text-sm font-semibold px-3 py-1 rounded-full">{placements.length}</span>
           </div>
           <p className="text-zinc-500 mt-2">Gestiona la relación entre alumnos y empresas.</p>
@@ -381,7 +381,7 @@ export const Placements: React.FC = () => {
 
       {isAdding && (
         <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm animate-in slide-in-from-top-4 duration-300">
-          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? 'Editar Práctica' : 'Nueva Práctica'}</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? 'Editar Formación' : 'Nueva Formación'}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Alumno</label>
@@ -576,7 +576,7 @@ export const Placements: React.FC = () => {
       <div className="space-y-4 print:hidden">
         {placements.length === 0 ? (
           <div className="py-12 text-center text-zinc-500 bg-white rounded-2xl border border-dashed border-zinc-200">
-            No hay prácticas asignadas todavía.
+            No hay formación asignada todavía.
           </div>
         ) : filteredPlacements.length === 0 ? (
           <div className="py-12 text-center text-zinc-500 bg-white rounded-2xl border border-zinc-200 shadow-sm">
@@ -708,7 +708,7 @@ export const Placements: React.FC = () => {
       <div className="hidden print:block text-black bg-white">
         <div className="mb-8 border-b-2 border-black pb-4 flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold mb-1 tracking-tight">Reporte de Asignaciones de Prácticas</h1>
+            <h1 className="text-3xl font-bold mb-1 tracking-tight">Reporte de Asignaciones de Formación</h1>
             <p className="text-xl text-zinc-600 font-medium">{schoolName} - Curso {academicYear}</p>
           </div>
           <div className="text-right text-sm text-zinc-500">
@@ -793,7 +793,7 @@ export const Placements: React.FC = () => {
               <h3 className="text-xl font-bold text-zinc-900">Eliminar asignación</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Estás seguro de que deseas eliminar esta asignación de prácticas? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar esta asignación de formación? Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
@@ -838,7 +838,7 @@ export const Placements: React.FC = () => {
                 const student = students.find(s => s.id === p?.studentId);
                 if (student?.email) {
                   const subject = encodeURIComponent(`Firma del Anexo A3 - Curso ${academicYear}`);
-                  const body = encodeURIComponent(`Hola ${student.firstName},\n\nTe adjunto el Anexo A3 de tus prácticas.\n\nPor favor, revísalo, fírmalo y entrégalo lo antes posible para poder formalizar la documentación.\n\nUn saludo,\n${tutorName}\n${schoolName}`);
+                  const body = encodeURIComponent(`Hola ${student.firstName},\n\nTe adjunto el Anexo A3 de tu formación.\n\nPor favor, revísalo, fírmalo y entrégalo lo antes posible para poder formalizar la documentación.\n\nUn saludo,\n${tutorName}\n${schoolName}`);
                   window.location.href = `mailto:${student.email}?subject=${subject}&body=${body}`;
                   if (p) {
                     updatePlacement({...p, a3EmailSent: true});
@@ -866,7 +866,7 @@ export const Placements: React.FC = () => {
             <div className="space-y-4 mb-8">
               <p className="text-zinc-600 leading-relaxed">Se han analizado los datos del archivo y esto es lo que se va a procesar:</p>
               <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2">
-                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Prácticas nuevas:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.placements.length}</span></div>
+                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Formaciones nuevas:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.placements.length}</span></div>
                 {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">Omitidas (Ya registradas / Alumno o Empresa no encontrados):</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
               </div>
             </div>
@@ -891,7 +891,7 @@ export const Placements: React.FC = () => {
             <p className="text-zinc-600 mb-8 leading-relaxed">
               {importResult.error || (
                 <>
-                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'práctica' : 'prácticas'} correctamente.
+                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'formación' : 'formaciones'} correctamente.
                   {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">({importResult.skipped} omitidas)</span>}
                 </>
               )}

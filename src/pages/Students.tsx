@@ -18,15 +18,15 @@ export const Students: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
-  
+
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
-  
+
   // Estados para la lógica de importación/exportación
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<{ students: any[], skipped: number } | null>(null);
   const [showExportOptions, setShowExportOptions] = useState(false);
-  
+
   // Referencia al input de archivo oculto
   const csvInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -47,7 +47,7 @@ export const Students: React.FC = () => {
       try {
         const text = event.target?.result as string;
         const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-        
+
         if (lines.length < 2) {
           setImportResult({ count: 0, skipped: 0, error: 'El archivo está vacío o solo contiene la cabecera.' });
           return;
@@ -76,7 +76,7 @@ export const Students: React.FC = () => {
         const header = lines[0];
         const separator = header.includes(';') ? ';' : ',';
         const headers = splitCSVLine(header, separator);
-        
+
         // Mapeo dinámico de índices de columnas por nombre
         const nameIdx = headers.findIndex(h => h.toLowerCase() === 'nombre');
         const lastNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellido'));
@@ -112,7 +112,7 @@ export const Students: React.FC = () => {
             }
           }
         }
-        
+
         // Mostrar modal de confirmación si hay datos válidos
         if (toImport.length > 0 || skipped > 0) {
           setPendingImport({ students: toImport, skipped });
@@ -158,7 +158,7 @@ export const Students: React.FC = () => {
       if (includeImages) row.push(`"${s.photoBase64 || ''}"`);
       return row.join(',');
     });
-    
+
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -244,7 +244,7 @@ export const Students: React.FC = () => {
   };
 
   // Filtrado y ordenación de la lista mostrada en tiempo real
-  const filtered = students.filter(s => 
+  const filtered = students.filter(s =>
     `${s.firstName} ${s.lastName} ${s.email}`.toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => a.lastName.localeCompare(b.lastName));
 
@@ -262,21 +262,21 @@ export const Students: React.FC = () => {
         <div className="flex gap-3">
           {/* Input de archivo oculto activado por el botón */}
           <input type="file" accept=".csv" ref={csvInputRef} className="hidden" onChange={handleCSVImport} />
-          <button 
+          <button
             onClick={() => csvInputRef.current?.click()}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <UploadCloud size={20} className="sm:mr-2" />
             <span className="hidden sm:inline">Importar Aules/FE Connect</span>
           </button>
-          <button 
+          <button
             onClick={() => setShowExportOptions(true)}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <Download size={20} className="sm:mr-2" />
             <span className="hidden sm:inline">Exportar CSV</span>
           </button>
-          <button 
+          <button
             onClick={() => {
               if (isAdding) resetForm();
               else {
@@ -299,19 +299,19 @@ export const Students: React.FC = () => {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre</label>
-              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Apellidos</label>
-              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-              <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Teléfono Móvil</label>
-              <input type="tel" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+              <input type="tel" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-zinc-700 mb-1">Foto del Alumno (Opcional)</label>
@@ -322,12 +322,12 @@ export const Students: React.FC = () => {
             </div>
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-zinc-700 mb-1">Notas / Indicaciones (Opcional)</label>
-              <textarea 
-                rows={3} 
-                placeholder="Añade cualquier observación relevante sobre el alumno..." 
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-y" 
-                value={formData.notes} 
-                onChange={e => setFormData({...formData, notes: e.target.value})} 
+              <textarea
+                rows={3}
+                placeholder="Añade cualquier observación relevante sobre el alumno..."
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-y"
+                value={formData.notes}
+                onChange={e => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
             <div className="md:col-span-3 flex justify-end mt-2">
@@ -506,25 +506,25 @@ export const Students: React.FC = () => {
               <h3 className="text-xl font-bold text-zinc-900">Exportar Alumnos</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Deseas incluir las fotos de los alumnos en el archivo CSV? 
+              ¿Deseas incluir las fotos de los alumnos en el archivo CSV?
               <span className="block mt-2 text-sm text-zinc-500 italic">Nota: Incluir imágenes aumentará significativamente el tamaño del archivo.</span>
             </p>
             <div className="grid grid-cols-1 gap-3">
-              <button 
-                onClick={() => exportToCSV(true)} 
+              <button
+                onClick={() => exportToCSV(true)}
                 className="w-full px-6 py-3 rounded-xl font-medium bg-white border-2 border-primary-100 hover:border-primary-200 text-primary-700 transition-colors flex items-center justify-center gap-2"
               >
                 <UploadCloud size={20} />
                 Sí, incluir imágenes (CSV pesado)
               </button>
-              <button 
-                onClick={() => exportToCSV(false)} 
+              <button
+                onClick={() => exportToCSV(false)}
                 className="w-full px-6 py-3 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors"
               >
                 No, solo texto (Recomendado)
               </button>
-              <button 
-                onClick={() => setShowExportOptions(false)} 
+              <button
+                onClick={() => setShowExportOptions(false)}
                 className="w-full px-6 py-3 rounded-xl font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
               >
                 Cancelar

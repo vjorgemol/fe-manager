@@ -51,10 +51,10 @@ export const Dashboard: React.FC = () => {
         if (!student) return;
 
         if (startDays > 0 && startDays <= reminderDays) {
-          events.push({ title: `${student.firstName} ${student.lastName} inicia prácticas`, days: startDays, type: 'start', id: p.id + 's' });
+          events.push({ title: `${student.firstName} ${student.lastName} inicia formación`, days: startDays, type: 'start', id: p.id + 's' });
         }
         if (endDays > 0 && endDays <= reminderDays) {
-          events.push({ title: `${student.firstName} ${student.lastName} finaliza prácticas`, days: endDays, type: 'end', id: p.id + 'e' });
+          events.push({ title: `${student.firstName} ${student.lastName} finaliza formación`, days: endDays, type: 'end', id: p.id + 'e' });
         }
       }
     });
@@ -77,7 +77,7 @@ export const Dashboard: React.FC = () => {
             <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-5 h-5" />
             <input 
               type="text" 
-              placeholder="Buscar alumnos, empresas, prácticas..." 
+              placeholder="Buscar alumnos, empresas, formación..." 
               value={globalSearch}
               onChange={(e) => setGlobalSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-shadow shadow-sm"
@@ -116,7 +116,7 @@ export const Dashboard: React.FC = () => {
               )}
               {searchResults.placements.length > 0 && (
                 <div className="p-2">
-                  <div className="text-xs font-semibold text-zinc-500 uppercase px-3 py-1 mb-1">Prácticas</div>
+                  <div className="text-xs font-semibold text-zinc-500 uppercase px-3 py-1 mb-1">Formación</div>
                   {searchResults.placements.map(p => {
                     const student = students.find(s => s.id === p.studentId);
                     const company = companies.find(c => c.id === p.companyId);
@@ -145,7 +145,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title="Alumnos" value={students.length} icon={Users} color="bg-blue-500" onDoubleClick={() => navigate('/students')} />
         <StatCard title="Empresas" value={companies.length} icon={Building2} color="bg-purple-500" onDoubleClick={() => navigate('/companies')} />
-        <StatCard title="Prácticas Activas" value={activePlacements} subtitle={`${pendingPlacements} pendientes`} icon={Briefcase} color="bg-emerald-500" onDoubleClick={() => navigate('/placements')} />
+        <StatCard title="Formación Activa" value={activePlacements} subtitle={`${pendingPlacements} pendientes`} icon={Briefcase} color="bg-emerald-500" onDoubleClick={() => navigate('/placements')} />
       </div>
 
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
