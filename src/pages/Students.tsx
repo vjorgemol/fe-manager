@@ -257,7 +257,7 @@ export const Students: React.FC = () => {
             <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Alumnos</h2>
             <span className="bg-primary-100 text-primary-700 text-sm font-semibold px-3 py-1 rounded-full">{students.length}</span>
           </div>
-          <p className="text-zinc-500 mt-2">Gestiona el listado de alumnos para prácticas.</p>
+          <p className="text-zinc-500 mt-2">Gestiona el listado de alumnos para la FE.</p>
         </div>
         <div className="flex gap-3">
           {/* Input de archivo oculto activado por el botón */}
