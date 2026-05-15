@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X } from 'lucide-react';
+import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X, LogOut } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 
 export const Layout: React.FC = () => {
   const { schoolName, setSchoolName, academicYear, setAcademicYear } = useData();
+  const { logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -62,6 +64,13 @@ export const Layout: React.FC = () => {
           ))}
         </nav>
         <div className="p-6 border-t border-zinc-100">
+          <button 
+            onClick={logout}
+            className="flex items-center text-sm font-medium text-zinc-500 hover:text-red-600 transition-colors mb-6 w-full text-left"
+          >
+            <LogOut size={16} className="mr-2" />
+            Cerrar Sesión
+          </button>
           <a 
             href="mailto:vicdejor@posteo.net"
             className="group block"

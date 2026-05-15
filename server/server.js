@@ -1,6 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import db from './database.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import { authenticator } from 'otplib';
+import QRCode from 'qrcode';
+
+
 
 const app = express();
 app.use(cors());
@@ -21,9 +27,125 @@ const run = (sql, params = []) => new Promise((resolve, reject) => {
   });
 });
 
+// --- AUTH MIDDLEWARE & ENDPOINTS ---
+app.post('/api/login', async (req, res) => {
+  const { password, totpToken } = req.body;
+  try {
+    const rows = await query("SELECT key, value FROM settings WHERE key IN ('adminPassword', 'jwtSecret', 'twoFactorEnabled', 'twoFactorSecret')");
+    const settings = rows.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
+
+    if (!settings.adminPassword || !settings.jwtSecret) return res.status(500).json({ error: 'Server configuration error' });
+
+    const match = await bcrypt.compare(password, settings.adminPassword);
+    if (!match) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    if (settings.twoFactorEnabled === 'true') {
+      if (!totpToken) {
+        return res.json({ require2FA: true });
+      }
+
+      const isValid = authenticator.verify({ token: totpToken, secret: settings.twoFactorSecret });
+      if (!isValid) {
+        return res.status(401).json({ error: 'Código de verificación incorrecto' });
+      }
+    }
+
+    const token = jwt.sign({ role: 'admin' }, settings.jwtSecret, { expiresIn: '24h' });
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Protect all other /api routes
+app.use('/api', (req, res, next) => {
+  if (req.path === '/login') return next();
+  
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (token == null) return res.status(401).json({ error: 'Unauthorized' });
+
+  query("SELECT value FROM settings WHERE key = 'jwtSecret'").then(rows => {
+    const jwtSecret = rows[0]?.value;
+    if (!jwtSecret) return res.status(500).json({ error: 'Configuration missing' });
+
+    jwt.verify(token, jwtSecret, (err, user) => {
+      if (err) return res.status(401).json({ error: 'Token expired or invalid' });
+      req.user = user;
+      next();
+    });
+  }).catch(err => res.status(500).json({ error: err.message }));
+});
+
+app.post('/api/change-password', async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  try {
+    const rows = await query("SELECT value FROM settings WHERE key = 'adminPassword'");
+    const hash = rows[0]?.value;
+    const match = await bcrypt.compare(oldPassword, hash);
+    if (match) {
+      const newHash = await bcrypt.hash(newPassword, 10);
+      await run("UPDATE settings SET value = ? WHERE key = 'adminPassword'", [newHash]);
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- 2FA Endpoints ---
+app.get('/api/2fa/generate', async (req, res) => {
+  try {
+    const secret = authenticator.generateSecret();
+    const otpauth = authenticator.keyuri('admin', 'FE Connect', secret);
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauth);
+    res.json({ secret, qrCodeDataUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/2fa/enable', async (req, res) => {
+  const { secret, token } = req.body;
+  try {
+    const isValid = authenticator.verify({ token, secret });
+    if (!isValid) {
+      return res.status(400).json({ error: 'El código introducido no es válido' });
+    }
+    await run("UPDATE settings SET value = ? WHERE key = 'twoFactorSecret'", [secret]);
+    await run("UPDATE settings SET value = 'true' WHERE key = 'twoFactorEnabled'");
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/2fa/disable', async (req, res) => {
+  const { password } = req.body;
+  try {
+    const rows = await query("SELECT value FROM settings WHERE key = 'adminPassword'");
+    const hash = rows[0]?.value;
+    const match = await bcrypt.compare(password, hash);
+    if (!match) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+    
+    await run("UPDATE settings SET value = '' WHERE key = 'twoFactorSecret'");
+    await run("UPDATE settings SET value = 'false' WHERE key = 'twoFactorEnabled'");
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- SETTINGS ---
 app.get('/api/settings', async (req, res) => {
-  const rows = await query('SELECT key, value FROM settings');
+  const rows = await query("SELECT key, value FROM settings WHERE key NOT IN ('adminPassword', 'jwtSecret', 'twoFactorSecret')");
   const settings = {};
   rows.forEach(r => settings[r.key] = r.value);
   res.json(settings);

@@ -1,6 +1,8 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -136,6 +138,18 @@ db.serialize(() => {
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('templateStart', '')`);
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('templateEnd', '')`);
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('cycleHours', '400')`);
+
+  // Default Auth Settings
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync('admin', salt);
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('adminPassword', '${hash}')`);
+  
+  const jwtSecret = crypto.randomUUID() + crypto.randomUUID();
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('jwtSecret', '${jwtSecret}')`);
+
+  // Default 2FA Settings
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('twoFactorEnabled', 'false')`);
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('twoFactorSecret', '')`);
 });
 
 export default db;
