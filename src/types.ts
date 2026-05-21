@@ -22,6 +22,9 @@ export interface Company {
   rejectedYears?: string;
   inactiveEmail?: boolean;
   phone?: string;
+  instructorName?: string;
+  instructorDni?: string;
+  instructorEmail?: string;
 }
 
 export interface Teacher {
@@ -50,4 +53,5 @@ export interface Placement {
   a3EmailSent?: boolean;
   a2Signed?: boolean;
   a3Signed?: boolean;
+  trackingCount?: number;
 }

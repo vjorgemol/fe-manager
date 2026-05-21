@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud } from 'lucide-react';
+import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud, Info, AlertTriangle } from 'lucide-react';
 import type { PlacementStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 
 export const Placements: React.FC = () => {
-  const { placements, students, companies, teachers, schoolName, academicYear, tutorName, tutorEmail, addPlacement, deletePlacement, updatePlacement } = useData();
+  const { placements, students, companies, teachers, schoolName, academicYear, tutorName, tutorEmail, addPlacement, deletePlacement, updatePlacement, updateCompany } = useData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [remindA3PlacementId, setRemindA3PlacementId] = useState<string | null>(null);
+  const [parsingAlert, setParsingAlert] = useState<{show: boolean, message: string} | null>(null);
+  const [parsingConfirm, setParsingConfirm] = useState<{show: boolean, instructorName: string, instructorDni: string, instructorEmail: string, company: any} | null>(null);
   
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
@@ -132,6 +134,47 @@ export const Placements: React.FC = () => {
       try {
         const base64 = await fileToBase64(file);
         setFormData(prev => ({ ...prev, [field]: base64 }));
+
+        if (field === 'anexoA3') {
+          try {
+            const res = await fetch('/api/parse-a3', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({ pdfBase64: base64 })
+            });
+            const data = await res.json();
+            
+            if (data.success && (data.instructorName || data.instructorDni || data.instructorEmail)) {
+              const company = companies.find(c => c.id === formData.companyId);
+              if (company) {
+                const nameDiffers = data.instructorName && company.instructorName !== data.instructorName;
+                const dniDiffers = data.instructorDni && company.instructorDni !== data.instructorDni;
+                const emailDiffers = data.instructorEmail && company.instructorEmail !== data.instructorEmail;
+
+                if (nameDiffers || dniDiffers || emailDiffers) {
+                  setParsingConfirm({
+                    show: true,
+                    instructorName: data.instructorName || 'No encontrado',
+                    instructorDni: data.instructorDni || 'No encontrado',
+                    instructorEmail: data.instructorEmail || 'No encontrado',
+                    company: company
+                  });
+                }
+              }
+            } else {
+              console.log("Texto extraído:", data.fullText);
+              setParsingAlert({
+                show: true,
+                message: "Se ha procesado el Anexo A3, pero no se ha podido encontrar el nombre ni el email del instructor de forma automática. Por favor, asegúrate de que el documento contiene los campos correspondientes."
+              });
+            }
+          } catch (apiErr) {
+            console.error('Error al analizar el A3:', apiErr);
+          }
+        }
       } catch (err) {
         console.error('Error al procesar el PDF:', err);
       }
@@ -897,6 +940,67 @@ export const Placements: React.FC = () => {
               )}
             </p>
             <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">Entendido</button></div>
+          </div>
+        </div>
+      )}
+
+      {parsingConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setParsingConfirm(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                <Info size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">Instructor detectado</h3>
+            </div>
+            <p className="text-zinc-600 mb-4 leading-relaxed">
+              Se ha detectado la siguiente información en el Anexo A3:
+            </p>
+            <div className="bg-zinc-50 p-4 rounded-xl mb-6 border border-zinc-100">
+              <div className="mb-2"><span className="font-semibold text-zinc-700">Nombre:</span> {parsingConfirm.instructorName}</div>
+              <div className="mb-2"><span className="font-semibold text-zinc-700">DNI/NIE:</span> {parsingConfirm.instructorDni}</div>
+              <div><span className="font-semibold text-zinc-700">Email:</span> {parsingConfirm.instructorEmail}</div>
+            </div>
+            <p className="text-zinc-600 mb-8 leading-relaxed font-medium">
+              ¿Quieres guardar estos datos como el instructor asignado en la ficha de la empresa?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setParsingConfirm(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
+                No, mantener
+              </button>
+              <button onClick={() => { 
+                updateCompany({
+                  ...parsingConfirm.company,
+                  instructorName: parsingConfirm.instructorName === 'No encontrado' ? parsingConfirm.company.instructorName : parsingConfirm.instructorName,
+                  instructorDni: parsingConfirm.instructorDni === 'No encontrado' ? parsingConfirm.company.instructorDni : parsingConfirm.instructorDni,
+                  instructorEmail: parsingConfirm.instructorEmail === 'No encontrado' ? parsingConfirm.company.instructorEmail : parsingConfirm.instructorEmail
+                });
+                setParsingConfirm(null); 
+              }} className="px-5 py-2.5 rounded-xl font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-colors flex items-center">
+                Sí, actualizar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {parsingAlert && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setParsingAlert(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">Aviso</h3>
+            </div>
+            <p className="text-zinc-600 mb-8 leading-relaxed">
+              {parsingAlert.message}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setParsingAlert(null)} className="px-5 py-2.5 rounded-xl font-medium bg-amber-100 hover:bg-amber-200 text-amber-800 transition-colors">
+                Entendido
+              </button>
+            </div>
           </div>
         </div>
       )}

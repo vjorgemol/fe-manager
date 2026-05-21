@@ -28,7 +28,7 @@ interface DataContextType {
   setCycleName: (name: string) => void;
   allStudents: Student[];
   allPlacements: Placement[];
-  importData: (data: { students: Student[], companies: Company[], placements: Placement[], teachers?: Teacher[], schoolName: string, academicYear: string, reminderDays?: number, tutorName?: string, tutorEmail?: string, cycleName?: string, templateProspecting?: string, templateStart?: string, templateEnd?: string, cycleHours?: number }) => void;
+  importData: (data: { students: Student[], companies: Company[], placements: Placement[], teachers?: Teacher[], schoolName: string, academicYear: string, reminderDays?: number, tutorName?: string, tutorEmail?: string, cycleName?: string, templateProspecting?: string, templateStart?: string, templateTracking?: string, templateEnd?: string, cycleHours?: number }) => void;
   addStudent: (student: Omit<Student, 'id'>) => void;
   updateStudent: (student: Student) => void;
   deleteStudent: (id: string) => void;
@@ -44,12 +44,18 @@ interface DataContextType {
   setTemplateProspecting: (template: string) => void;
   templateStart: string;
   setTemplateStart: (template: string) => void;
+  templateTracking: string;
+  setTemplateTracking: (template: string) => void;
   templateEnd: string;
   setTemplateEnd: (template: string) => void;
   cycleHours: number;
   setCycleHours: (hours: number) => void;
   twoFactorEnabled: boolean;
   setTwoFactorEnabled: (enabled: boolean) => void;
+  originAddress: string;
+  setOriginAddress: (address: string) => void;
+  googleMapsApiKey: string;
+  setGoogleMapsApiKey: (key: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -86,9 +92,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cycleName, setCycleName] = useState<string>('Formación Profesional');
   const [templateProspecting, setTemplateProspecting] = useState<string>(`Estimados responsables de {companyName},\n\nMe pongo en contacto con ustedes desde {schoolName} para ofrecerles la posibilidad de acoger a nuestros alumnos del ciclo de {cycleName} para realizar la Formación en Empresas (FE) de {hours} horas.\n\nNuestros alumnos cuentan con una sólida base teórica y práctica, y están listos para integrarse en un entorno laboral real para complementar su aprendizaje. La acogida de alumnos en formación no supone ninguna relación laboral ni coste para la empresa.\n\nEstaríamos encantados de poder organizar una breve llamada o reunión para detallarles el proceso y las fechas en las que los alumnos podrían incorporarse.\n\nQuedo a su entera disposición.\n\nAtentamente,\n{tutorName}\n{schoolName}\n{tutorEmail}`);
   const [templateStart, setTemplateStart] = useState<string>(`Hola {contactPerson},\n\nEste es un correo recordatorio de que la formación de {cycleName} comenzará en breve.\n\nAlumno/a: {studentName}\nCentro Educativo: {schoolName}\nEmpresa: {companyName}\nFecha de Inicio: {startDate}\nHoras Totales: {hours}\n\nPara cualquier duda, estoy a su disposición.\n\nUn saludo,\n{tutorName}\n{tutorEmail}`);
+  const [templateTracking, setTemplateTracking] = useState<string>(`Hola {contactPerson},\n\nMe pongo en contacto con ustedes para realizar el seguimiento semanal de la formación de {studentName}.\n\nPor favor, ¿podrían confirmarme si el alumno está respondiendo de manera adecuada a las tareas asignadas y si su evolución está siendo positiva?\n\nUn saludo y gracias por su colaboración,\n{tutorName}\n{tutorEmail}`);
   const [templateEnd, setTemplateEnd] = useState<string>(`Hola {contactPerson},\n\nLes escribo para recordarles que el periodo de Formación en Centros de Trabajo de {studentName} está próximo a su finalización ({endDate}).\n\nEs necesario que vayamos preparando la documentación de evaluación final. Me pondré en contacto con la empresa en los próximos días para concretar la visita de seguimiento y evaluación.\n\nUn saludo y gracias por su colaboración,\n{tutorName}\n{tutorEmail}`);
   const [cycleHours, setCycleHours] = useState<number>(400);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState<boolean>(false);
+  const [originAddress, setOriginAddress] = useState<string>('');
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>('');
 
   // --- Estados de Datos ---
   const [students, setStudents] = useState<Student[]>([]);
@@ -113,9 +122,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.cycleName) setCycleName(data.cycleName);
         if (data.templateProspecting) setTemplateProspecting(data.templateProspecting);
         if (data.templateStart) setTemplateStart(data.templateStart);
+        if (data.templateTracking) setTemplateTracking(data.templateTracking);
         if (data.templateEnd) setTemplateEnd(data.templateEnd);
         if (data.cycleHours) setCycleHours(Number(data.cycleHours));
         if (data.twoFactorEnabled !== undefined) setTwoFactorEnabled(data.twoFactorEnabled === true || data.twoFactorEnabled === 'true');
+        if (data.originAddress !== undefined) setOriginAddress(data.originAddress);
+        if (data.googleMapsApiKey !== undefined) setGoogleMapsApiKey(data.googleMapsApiKey);
       })
       .catch(console.error);
 
@@ -147,9 +159,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSetTemplateProspecting = (template: string) => { setTemplateProspecting(template); updateSettings('templateProspecting', template); };
   const handleSetTemplateStart = (template: string) => { setTemplateStart(template); updateSettings('templateStart', template); };
+  const handleSetTemplateTracking = (template: string) => { setTemplateTracking(template); updateSettings('templateTracking', template); };
   const handleSetTemplateEnd = (template: string) => { setTemplateEnd(template); updateSettings('templateEnd', template); };
   const handleSetCycleHours = (hours: number) => { setCycleHours(hours); updateSettings('cycleHours', hours.toString()); };
   const handleSetTwoFactorEnabled = (enabled: boolean) => { setTwoFactorEnabled(enabled); updateSettings('twoFactorEnabled', enabled.toString()); };
+  const handleSetOriginAddress = (address: string) => { setOriginAddress(address); updateSettings('originAddress', address); };
+  const handleSetGoogleMapsApiKey = (key: string) => { setGoogleMapsApiKey(key); updateSettings('googleMapsApiKey', key); };
 
   /**
    * Calcula el curso académico anterior basándose en el actual (ej: "25/26" -> "24/25").
@@ -241,7 +256,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Importación masiva de datos (usada por la restauración de Backup XML).
    */
-  const importData = (data: { students: Student[], companies: Company[], placements: Placement[], teachers?: Teacher[], schoolName: string, academicYear: string, reminderDays?: number, tutorName?: string, tutorEmail?: string, cycleName?: string, templateProspecting?: string, templateStart?: string, templateEnd?: string, cycleHours?: number }) => {
+  const importData = (data: { students: Student[], companies: Company[], placements: Placement[], teachers?: Teacher[], schoolName: string, academicYear: string, reminderDays?: number, tutorName?: string, tutorEmail?: string, cycleName?: string, templateProspecting?: string, templateStart?: string, templateTracking?: string, templateEnd?: string, cycleHours?: number }) => {
     setStudents(data.students || []);
     setCompanies(data.companies || []);
     setPlacements(data.placements || []);
@@ -254,6 +269,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (data.cycleName) setCycleName(data.cycleName);
     if (data.templateProspecting) setTemplateProspecting(data.templateProspecting);
     if (data.templateStart) setTemplateStart(data.templateStart);
+    if (data.templateTracking) setTemplateTracking(data.templateTracking);
     if (data.templateEnd) setTemplateEnd(data.templateEnd);
     if (data.cycleHours) setCycleHours(data.cycleHours);
     
@@ -286,9 +302,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addPlacement, updatePlacement, deletePlacement,
       templateProspecting, setTemplateProspecting: handleSetTemplateProspecting,
       templateStart, setTemplateStart: handleSetTemplateStart,
+      templateTracking, setTemplateTracking: handleSetTemplateTracking,
       templateEnd, setTemplateEnd: handleSetTemplateEnd,
       cycleHours, setCycleHours: handleSetCycleHours,
-      twoFactorEnabled, setTwoFactorEnabled: handleSetTwoFactorEnabled
+      twoFactorEnabled, setTwoFactorEnabled: handleSetTwoFactorEnabled,
+      originAddress, setOriginAddress: handleSetOriginAddress,
+      googleMapsApiKey, setGoogleMapsApiKey: handleSetGoogleMapsApiKey
     }}>
       {children}
     </DataContext.Provider>

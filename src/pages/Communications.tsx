@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Mail, Send, ExternalLink, Calendar, Building2 } from 'lucide-react';
+import { Mail, Send, ExternalLink, Calendar, Building2, AlertTriangle } from 'lucide-react';
 import { differenceInDays, parseISO, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -12,7 +12,7 @@ export const Communications: React.FC = () => {
   const { 
     students, companies, placements, schoolName, reminderDays, 
     updatePlacement, updateCompany, tutorName, tutorEmail, cycleName, academicYear,
-    templateProspecting, templateStart, templateEnd, cycleHours
+    templateProspecting, templateStart, templateTracking, templateEnd, cycleHours
   } = useData();
   
   const [activeTab, setActiveTab] = useState<'prospecting' | 'reminders'>('reminders');
@@ -79,6 +79,13 @@ export const Communications: React.FC = () => {
         } else if (p.status === 'active' && endDays > 0 && endDays <= reminderDays && !p.endEmailSent) {
           type = 'end';
           days = endDays;
+        } else if (p.status === 'active') {
+          const startDaysPassed = differenceInDays(today, parseISO(p.startDate));
+          const targetDays = (p.trackingCount || 0) === 0 ? 3 : 3 + (7 * (p.trackingCount || 0));
+          if (startDaysPassed >= targetDays) {
+            type = 'tracking';
+            days = 0; // Not applicable for tracking, just an immediate reminder
+          }
         }
 
         if (type && student && company) {
@@ -128,6 +135,18 @@ export const Communications: React.FC = () => {
       return {
         to: `${student.email}, ${company.email}`,
         subject: `[FE] Inicio de Formación: ${student.firstName} ${student.lastName}`,
+        body
+      };
+    } else if (type === 'tracking') {
+      const body = replaceVars(templateTracking, {
+        studentName: `${student.firstName} ${student.lastName}`,
+        companyName: company.name,
+        contactPerson: company.instructorName || company.contactPerson || 'Hola'
+      });
+
+      return {
+        to: company.instructorEmail || company.email,
+        subject: `[FE] Seguimiento Semanal: ${student.firstName} ${student.lastName}`,
         body
       };
     } else {
@@ -186,17 +205,17 @@ export const Communications: React.FC = () => {
               const email = getReminderEmail(item);
               return (
                 <div key={i} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                  <div className={`px-4 sm:px-6 py-4 border-b border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${item.type === 'start' ? 'bg-emerald-50/50' : 'bg-amber-50/50'}`}>
+                  <div className={`px-4 sm:px-6 py-4 border-b border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${item.type === 'start' ? 'bg-emerald-50/50' : item.type === 'tracking' ? 'bg-blue-50/50' : 'bg-amber-50/50'}`}>
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${item.type === 'start' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                      <div className={`p-2 rounded-lg ${item.type === 'start' ? 'bg-emerald-100 text-emerald-600' : item.type === 'tracking' ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'}`}>
                         <Calendar size={20} />
                       </div>
                       <div>
                         <h3 className="font-bold text-zinc-900">
-                          {item.type === 'start' ? 'Recordatorio de Inicio' : 'Aviso de Finalización'}
+                          {item.type === 'start' ? 'Recordatorio de Inicio' : item.type === 'tracking' ? 'Seguimiento Semanal' : 'Aviso de Finalización'}
                         </h3>
                         <p className="text-sm text-zinc-500">
-                          Faltan {item.days} días - {item.student.firstName} en {item.company.name}
+                          {item.type === 'tracking' ? `Seguimiento ${(item.p.trackingCount || 0) + 1} - ` : `Faltan ${item.days} días - `}{item.student.firstName} en {item.company.name}
                         </p>
                       </div>
                     </div>
@@ -205,6 +224,8 @@ export const Communications: React.FC = () => {
                         onClick={() => {
                           if (item.type === 'start') {
                             updatePlacement({ ...item.p, startEmailSent: true });
+                          } else if (item.type === 'tracking') {
+                            updatePlacement({ ...item.p, trackingCount: (item.p.trackingCount || 0) + 1 });
                           } else {
                             updatePlacement({ ...item.p, endEmailSent: true });
                           }
@@ -235,8 +256,16 @@ export const Communications: React.FC = () => {
                       </div>
                       <div className="flex gap-4 items-start">
                         <span className="text-sm font-semibold text-zinc-400 w-16 pt-1">Mensaje:</span>
-                        <div className="text-sm text-zinc-700 whitespace-pre-wrap bg-white p-4 rounded-xl border border-zinc-200 w-full shadow-sm">
-                          {email.body}
+                        <div className="w-full">
+                          {item.type === 'end' && (
+                            <div className="mb-3 px-3 py-2 bg-red-50 border border-red-100 text-red-700 rounded-lg text-sm flex items-center gap-2 font-medium">
+                              <AlertTriangle size={16} />
+                              ⚠️ Recuerda adjuntar el Anexo A5 en este correo de forma manual antes de enviarlo.
+                            </div>
+                          )}
+                          <div className="text-sm text-zinc-700 whitespace-pre-wrap bg-white p-4 rounded-xl border border-zinc-200 shadow-sm">
+                            {email.body}
+                          </div>
                         </div>
                       </div>
                     </div>

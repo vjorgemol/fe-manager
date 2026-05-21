@@ -97,6 +97,9 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'a3Signed')) {
         db.run("ALTER TABLE placements ADD COLUMN a3Signed INTEGER DEFAULT 0");
       }
+      if (!columns.some(c => c.name === 'trackingCount')) {
+        db.run("ALTER TABLE placements ADD COLUMN trackingCount INTEGER DEFAULT 0");
+      }
     }
   });
 
@@ -112,17 +115,26 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'prospectingYears')) {
         db.run("ALTER TABLE companies ADD COLUMN prospectingYears TEXT DEFAULT ''");
       }
-      if (!columns.some(c => c.name === 'inactiveEmail')) {
-        db.run("ALTER TABLE companies ADD COLUMN inactiveEmail INTEGER DEFAULT 0");
-      }
       if (!columns.some(c => c.name === 'acceptedYears')) {
         db.run("ALTER TABLE companies ADD COLUMN acceptedYears TEXT DEFAULT ''");
       }
       if (!columns.some(c => c.name === 'rejectedYears')) {
         db.run("ALTER TABLE companies ADD COLUMN rejectedYears TEXT DEFAULT ''");
       }
+      if (!columns.some(c => c.name === 'inactiveEmail')) {
+        db.run("ALTER TABLE companies ADD COLUMN inactiveEmail INTEGER DEFAULT 0");
+      }
       if (!columns.some(c => c.name === 'phone')) {
         db.run("ALTER TABLE companies ADD COLUMN phone TEXT");
+      }
+      if (!columns.some(c => c.name === 'instructorName')) {
+        db.run("ALTER TABLE companies ADD COLUMN instructorName TEXT");
+      }
+      if (!columns.some(c => c.name === 'instructorDni')) {
+        db.run("ALTER TABLE companies ADD COLUMN instructorDni TEXT");
+      }
+      if (!columns.some(c => c.name === 'instructorEmail')) {
+        db.run("ALTER TABLE companies ADD COLUMN instructorEmail TEXT");
       }
     }
   });
@@ -136,8 +148,11 @@ db.serialize(() => {
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('cycleName', 'Formación Profesional')`);
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('templateProspecting', '')`);
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('templateStart', '')`);
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('templateTracking', '')`);
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('templateEnd', '')`);
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('cycleHours', '400')`);
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('originAddress', '')`);
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('googleMapsApiKey', '')`);
 
   // Default Auth Settings
   const salt = bcrypt.genSaltSync(10);

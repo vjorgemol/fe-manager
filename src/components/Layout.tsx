@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X, LogOut } from 'lucide-react';
+import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X, LogOut, MapPin } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,6 +14,7 @@ export const Layout: React.FC = () => {
     { to: '/companies', icon: Building2, label: 'Empresas' },
     { to: '/placements', icon: Briefcase, label: 'Formación' },
     { to: '/communications', icon: Mail, label: 'Comunicaciones' },
+    { to: '/visits', icon: MapPin, label: 'Rutas y Visitas' },
     { to: '/settings', icon: SettingsIcon, label: 'Ajustes' },
   ];
 

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Database, UploadCloud, DownloadCloud, AlertTriangle, CheckCircle2, Plus, UserCheck, Trash2, Mail, Lock, ShieldCheck, ShieldAlert, Smartphone, ChevronDown, ChevronUp, Settings as SettingsIcon, Shield, Server } from 'lucide-react';
+import { Database, UploadCloud, DownloadCloud, AlertTriangle, CheckCircle2, Plus, UserCheck, Trash2, Mail, Lock, ShieldCheck, ShieldAlert, Smartphone, ChevronDown, ChevronUp, Settings as SettingsIcon, Shield, Server, MapPin } from 'lucide-react';
 
 const AccordionItem: React.FC<{ title: string; description: string; icon: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, description, icon, defaultOpen = false, children }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -39,9 +39,11 @@ export const Settings: React.FC = () => {
     cycleName, setCycleName, importData, addTeacher, deleteTeacher,
     templateProspecting, setTemplateProspecting,
     templateStart, setTemplateStart,
+    templateTracking, setTemplateTracking,
     templateEnd, setTemplateEnd,
     cycleHours, setCycleHours,
-    twoFactorEnabled, setTwoFactorEnabled
+    twoFactorEnabled, setTwoFactorEnabled,
+    originAddress, setOriginAddress
   } = useData();
   const [newTeacherName, setNewTeacherName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +80,7 @@ export const Settings: React.FC = () => {
     xml += `    <cycleName>${escapeXml(cycleName)}</cycleName>\n`;
     xml += `    <templateProspecting>${escapeXml(templateProspecting)}</templateProspecting>\n`;
     xml += `    <templateStart>${escapeXml(templateStart)}</templateStart>\n`;
+    xml += `    <templateTracking>${escapeXml(templateTracking)}</templateTracking>\n`;
     xml += `    <templateEnd>${escapeXml(templateEnd)}</templateEnd>\n`;
     xml += `    <cycleHours>${cycleHours}</cycleHours>\n`;
     xml += `    <exportDate>${new Date().toISOString()}</exportDate>\n`;
@@ -180,6 +183,7 @@ export const Settings: React.FC = () => {
         const loadedCycleName = meta?.getElementsByTagName("cycleName")[0]?.textContent || 'Formación Profesional';
         const loadedTemplateProspecting = meta?.getElementsByTagName("templateProspecting")[0]?.textContent || '';
         const loadedTemplateStart = meta?.getElementsByTagName("templateStart")[0]?.textContent || '';
+        const loadedTemplateTracking = meta?.getElementsByTagName("templateTracking")[0]?.textContent || '';
         const loadedTemplateEnd = meta?.getElementsByTagName("templateEnd")[0]?.textContent || '';
         const loadedCycleHours = Number(meta?.getElementsByTagName("cycleHours")[0]?.textContent) || 400;
 
@@ -232,6 +236,7 @@ export const Settings: React.FC = () => {
           cycleName: loadedCycleName,
           templateProspecting: loadedTemplateProspecting,
           templateStart: loadedTemplateStart,
+          templateTracking: loadedTemplateTracking,
           templateEnd: loadedTemplateEnd,
           cycleHours: loadedCycleHours,
           teachers: teachersList
@@ -409,7 +414,16 @@ export const Settings: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">3. Aviso de Finalización de Formación</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">3. Seguimiento Semanal</label>
+            <textarea 
+              className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+              placeholder="Escribe la plantilla para el seguimiento semanal..."
+              value={templateTracking} onChange={e => setTemplateTracking(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">4. Aviso de Finalización de Formación</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
               placeholder="Escribe la plantilla para avisar del fin de la formación..."
@@ -424,6 +438,29 @@ export const Settings: React.FC = () => {
                 <code key={v} className="text-[10px] bg-white border border-indigo-100 px-2 py-1 rounded text-indigo-600 font-mono text-center shadow-sm">{v}</code>
               ))}
             </div>
+          </div>
+        </div>
+      </AccordionItem>
+
+      {/* --- PLANIFICACIÓN DE VISITAS --- */}
+      <AccordionItem
+        title="Rutas y Visitas"
+        description="Configura la dirección de origen y la integración con Google Maps."
+        icon={<MapPin size={24} />}
+      >
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200">
+            <h3 className="text-lg font-bold text-zinc-900 mb-2 flex items-center gap-2">
+              <MapPin size={20} className="text-indigo-600" /> Dirección de Origen
+            </h3>
+            <p className="text-zinc-500 mb-4 text-sm">Establece la dirección predeterminada desde la que partirás para realizar las visitas a las empresas (ej. la dirección de tu centro educativo o tu domicilio). La optimización de la ruta tomará este punto como origen.</p>
+            <input 
+              type="text" 
+              className="w-full px-4 py-3 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+              placeholder="Ej: Calle Principal 123, Madrid"
+              value={originAddress} 
+              onChange={e => setOriginAddress(e.target.value)}
+            />
           </div>
         </div>
       </AccordionItem>

@@ -24,7 +24,10 @@ export const Companies: React.FC = () => {
     contactPerson: '', 
     collaborationStatus: 'none' as 'none' | 'prospecting' | 'accepted' | 'rejected', 
     inactiveEmail: false, 
-    phone: '' 
+    phone: '',
+    instructorName: '',
+    instructorDni: '',
+    instructorEmail: ''
   });
   
   const [searchParams] = useSearchParams();
@@ -217,7 +220,10 @@ export const Companies: React.FC = () => {
       contactPerson: company.contactPerson || '', 
       collaborationStatus: status, 
       inactiveEmail: !!company.inactiveEmail,
-      phone: company.phone || ''
+      phone: company.phone || '',
+      instructorName: company.instructorName || '',
+      instructorDni: company.instructorDni || '',
+      instructorEmail: company.instructorEmail || ''
     });
     setEditingId(company.id);
     setIsAdding(true);
@@ -225,7 +231,7 @@ export const Companies: React.FC = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', location: '', address: '', contactPerson: '', collaborationStatus: 'none', inactiveEmail: false, phone: '' });
+    setFormData({ name: '', email: '', location: '', address: '', contactPerson: '', collaborationStatus: 'none', inactiveEmail: false, phone: '', instructorName: '', instructorDni: '', instructorEmail: '' });
     setEditingId(null);
     setIsAdding(false);
   };
@@ -343,7 +349,26 @@ export const Companies: React.FC = () => {
               <label className="block text-sm font-medium text-zinc-700 mb-1">Teléfono</label>
               <input type="tel" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
             </div>
-            <div className="md:col-span-2">
+            
+            <div className="md:col-span-3 mt-4 pt-4 border-t border-zinc-100">
+              <h4 className="font-semibold text-zinc-800 mb-4">Datos del Instructor (Extraídos del Anexo A3 o manuales)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre Instructor/a</label>
+                  <input type="text" placeholder="Ej: Enrique San Valero" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorName} onChange={e => setFormData({...formData, instructorName: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">DNI/NIE</label>
+                  <input type="text" placeholder="Ej: 12345678A" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorDni} onChange={e => setFormData({...formData, instructorDni: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Email Instructor/a</label>
+                  <input type="email" placeholder="Ej: instructor@empresa.com" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorEmail} onChange={e => setFormData({...formData, instructorEmail: e.target.value})} />
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 mt-4">
               <label className="block text-sm font-medium text-zinc-700 mb-1">Estado de Colaboración ({academicYear})</label>
               <select 
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
@@ -436,6 +461,15 @@ export const Companies: React.FC = () => {
                   </p>
                 )}
               </div>
+              
+              {(c.instructorName || c.instructorEmail) && (
+                <div className="mb-4 bg-zinc-50 border border-zinc-100 rounded-xl p-3">
+                  <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Instructor/a Asignado</div>
+                  <div className="text-sm font-medium text-zinc-800">{c.instructorName || 'Nombre no disponible'} {c.instructorDni ? `(${c.instructorDni})` : ''}</div>
+                  <div className="text-sm text-zinc-500">{c.instructorEmail || 'Email no disponible'}</div>
+                </div>
+              )}
+              
               <div className="flex flex-col gap-2">
                 <div className="flex items-center text-xs font-medium text-zinc-600 bg-zinc-50 inline-flex px-3 py-1.5 rounded-lg w-fit">
                   <MapPin size={14} className="mr-1.5 text-zinc-400 shrink-0" />

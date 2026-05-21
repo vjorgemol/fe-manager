@@ -10,6 +10,7 @@ import { Placements } from './pages/Placements';
 import { Communications } from './pages/Communications';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+import { Visits } from './pages/Visits';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { token } = useAuth();
@@ -30,6 +31,7 @@ function App() {
               <Route path="companies" element={<Companies />} />
               <Route path="placements" element={<Placements />} />
               <Route path="communications" element={<Communications />} />
+              <Route path="visits" element={<Visits />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
