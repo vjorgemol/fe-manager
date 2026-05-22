@@ -86,12 +86,7 @@ export const Visits: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Planificación de Visitas</h2>
-        <p className="text-zinc-500 mt-2">Organiza tus rutas para visitar a los alumnos en prácticas de forma eficiente.</p>
-      </div>
-
+    <div className="space-y-6 animate-in fade-in duration-500">
       {!originAddress && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-4">
           <div className="text-amber-500 mt-0.5"><AlertTriangle size={20} /></div>
