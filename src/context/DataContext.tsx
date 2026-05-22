@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { Student, Company, Placement, Teacher } from '../types';
+import type { Student, Company, Placement, Teacher, PlacementStatus } from '../types';
 import { useAuth } from './AuthContext';
 
 // URL base para las peticiones al servidor backend (Node.js/Express)
@@ -134,13 +134,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cargar colecciones de datos
     apiFetch(`/students`).then(res => res.json()).then(setStudents).catch(console.error);
     apiFetch(`/companies`).then(res => res.json()).then(setCompanies).catch(console.error);
-    apiFetch(`/placements`).then(res => res.json()).then(setPlacements).catch(console.error);
+    apiFetch(`/placements`).then(res => res.json()).then((data: Placement[]) => {
+      setPlacements(data.map(p => ({ ...p, status: getComputedStatus(p) })));
+    }).catch(console.error);
     apiFetch(`/teachers`).then(res => res.json()).then(setTeachers).catch(console.error);
   }, [token]);
 
   /**
    * Sincroniza un ajuste específico con la base de datos.
    */
+
+
   const updateSettings = (key: string, value: string) => {
     apiFetch(`/settings`, {
       method: 'PUT',
@@ -213,6 +217,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apiFetch(`/companies/${id}`, { method: 'DELETE' }).catch(console.error);
   };
 
+  // Helper to compute automatic status
+  const getComputedStatus = (p: Placement): PlacementStatus => {
+    if (p.status === 'cancelled') return 'cancelled';
+    const today = new Date().toISOString().split('T')[0];
+    if (today < p.startDate) return 'pending';
+    if (today > p.endDate) return 'completed';
+    return 'active';
+  };
+
   // --- CRUD Profesores ---
   const addTeacher = (teacher: Omit<Teacher, 'id'>) => {
     const newTeacher = { ...teacher, id: crypto.randomUUID() };
@@ -228,14 +241,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- CRUD Asignaciones (Placements) ---
   const addPlacement = (placement: Omit<Placement, 'id'>) => {
-    const newPlacement = { ...placement, id: crypto.randomUUID(), academicYear };
+    const newPlacement = { ...placement, id: crypto.randomUUID(), academicYear, status: getComputedStatus(placement as Placement) };
     setPlacements(prev => [...prev, newPlacement]);
     apiFetch(`/placements`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newPlacement) }).catch(console.error);
   };
 
   const updatePlacement = (updated: Placement) => {
-    setPlacements(prev => prev.map(p => p.id === updated.id ? updated : p));
-    apiFetch(`/placements/${updated.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(console.error);
+    const computedUpdated = { ...updated, status: getComputedStatus(updated) };
+    setPlacements(prev => prev.map(p => p.id === computedUpdated.id ? computedUpdated : p));
+    apiFetch(`/placements/${computedUpdated.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(computedUpdated) }).catch(console.error);
   };
 
   const deletePlacement = (id: string) => {

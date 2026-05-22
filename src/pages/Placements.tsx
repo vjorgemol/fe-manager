@@ -731,12 +731,21 @@ export const Placements: React.FC = () => {
                     {getStatusBadge(p.status)}
                     <select 
                       className="text-xs bg-white border border-zinc-200 rounded px-2 py-1 outline-none focus:border-primary-500"
-                      value={p.status}
-                      onChange={e => updatePlacement({...p, status: e.target.value as PlacementStatus})}
+                      value={p.status === 'cancelled' ? 'cancelled' : 'auto'}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'cancelled') {
+                          updatePlacement({...p, status: 'cancelled'});
+                        } else {
+                          const today = new Date().toISOString().split('T')[0];
+                          let autoStatus: PlacementStatus = 'active';
+                          if (today < p.startDate) autoStatus = 'pending';
+                          if (today > p.endDate) autoStatus = 'completed';
+                          updatePlacement({...p, status: autoStatus});
+                        }
+                      }}
                     >
-                      <option value="pending">Pendiente</option>
-                      <option value="active">Activa</option>
-                      <option value="completed">Finalizada</option>
+                      <option value="auto">Estado Automático</option>
                       <option value="cancelled">Cancelada</option>
                     </select>
                   </div>
