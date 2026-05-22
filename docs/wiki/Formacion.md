@@ -5,7 +5,7 @@ Aquí es donde conectas a los alumnos con las empresas. Esta sección te permite
 ## Creación y Búsqueda
 1.  Pulsa en **"Nueva Asignación"**.
 2.  Selecciona al alumno y usa el buscador desplegable integrado (combobox) para encontrar rápidamente a la empresa.
-3.  Indica las fechas de inicio, fin, el total de horas y su estado.
+3.  Indica las fechas de inicio, fin y el total de horas. El sistema calculará el **estado de forma automática** (Pendiente, Activa, Finalizada) en función de las fechas actuales, aunque siempre podrás marcarla como "Cancelada" manualmente.
 4.  Asigna un **Profesor Responsable** para el seguimiento.
 
 > **Buscador Universal**: Puedes usar la barra de búsqueda principal en el **Dashboard** para localizar rápidamente alumnos, empresas o asignaciones de formación desde cualquier parte de la aplicación.
