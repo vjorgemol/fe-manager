@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Minus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud, CheckCircle2, AlertTriangle } from 'lucide-react';
 
@@ -9,6 +10,7 @@ import { Plus, Minus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud
  */
 export const Companies: React.FC = () => {
   const { companies, addCompany, deleteCompany, updateCompany, academicYear } = useData();
+  const { t } = useLanguage();
   
   // Estados de la interfaz
   const [isAdding, setIsAdding] = useState(false);
@@ -326,10 +328,10 @@ export const Companies: React.FC = () => {
       <div className="flex justify-between items-end">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Empresas</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">{t('companies.title')}</h2>
             <span className="bg-primary-100 text-primary-700 text-sm font-semibold px-3 py-1 rounded-full">{companies.length}</span>
           </div>
-          <p className="text-zinc-500 mt-2">Directorio de empresas colaboradoras.</p>
+          <p className="text-zinc-500 mt-2">{t('companies.desc')}</p>
         </div>
         <div className="flex gap-3">
           <input type="file" accept=".csv" ref={csvInputRef} className="hidden" onChange={handleCSVImport} />
@@ -338,14 +340,14 @@ export const Companies: React.FC = () => {
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <UploadCloud size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">Importar CSV</span>
+            <span className="hidden sm:inline">{t('companies.importCsv')}</span>
           </button>
           <button 
             onClick={exportToCSV}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <Download size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">Exportar CSV</span>
+            <span className="hidden sm:inline">{t('companies.exportCsv')}</span>
           </button>
           <button 
             onClick={() => {
@@ -369,7 +371,7 @@ export const Companies: React.FC = () => {
             ) : (
               <Plus size={20} className="sm:mr-2" />
             )}
-            <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Añadir Empresa'}</span>
+            <span className="hidden sm:inline">{isAdding ? t('companies.cancel') : t('companies.newCompany')}</span>
           </button>
         </div>
       </div>
@@ -377,62 +379,62 @@ export const Companies: React.FC = () => {
       {/* Formulario de Alta/Edición */}
       {isAdding && (
         <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm animate-in slide-in-from-top-4 duration-300">
-          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? 'Editar Empresa' : 'Nueva Empresa'}</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? t('companies.editCompany') : t('companies.newCompany')}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre Comercial</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.name')}</label>
               <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Email de Contacto</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.email')}</label>
               <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Localidad</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.location')}</label>
               <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección Completa</label>
-              <input type="text" placeholder="Calle, número, código postal..." className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.address')}</label>
+              <input type="text" placeholder={t('companies.form.addressPlaceholder')} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Persona de Contacto</label>
-              <input type="text" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} />
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.contact')}</label>
+              <input type="text" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Teléfono</label>
-              <input type="tel" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.phone')}</label>
+              <input type="tel" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
             </div>
             
             <div className="md:col-span-3 mt-4 pt-4 border-t border-zinc-100">
-              <h4 className="font-semibold text-zinc-800 mb-4">Datos del Instructor (Extraídos del Anexo A3 o manuales)</h4>
+              <h4 className="font-semibold text-zinc-800 mb-4">{t('companies.form.instructorTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre Instructor/a</label>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.instructorName')}</label>
                   <input type="text" placeholder="Ej: Enrique San Valero" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorName} onChange={e => setFormData({...formData, instructorName: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">DNI/NIE</label>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.instructorDni')}</label>
                   <input type="text" placeholder="Ej: 12345678A" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorDni} onChange={e => setFormData({...formData, instructorDni: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">Email Instructor/a</label>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.instructorEmail')}</label>
                   <input type="email" placeholder="Ej: instructor@empresa.com" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorEmail} onChange={e => setFormData({...formData, instructorEmail: e.target.value})} />
                 </div>
               </div>
             </div>
 
             <div className="md:col-span-2 mt-4">
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Estado de Colaboración ({academicYear})</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.status', { year: academicYear })}</label>
               <select 
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                 value={formData.collaborationStatus}
                 onChange={e => setFormData({...formData, collaborationStatus: e.target.value as any})}
               >
-                <option value="none">Sin contactar</option>
-                <option value="prospecting">Prospección enviada</option>
-                <option value="accepted">Acepta la colaboración</option>
-                <option value="rejected">No acepta colaboración</option>
+                <option value="none">{t('companies.form.status.none')}</option>
+                <option value="prospecting">{t('companies.form.status.prospecting')}</option>
+                <option value="accepted">{t('companies.form.status.accepted')}</option>
+                <option value="rejected">{t('companies.form.status.rejected')}</option>
               </select>
             </div>
             <div>
@@ -443,12 +445,12 @@ export const Companies: React.FC = () => {
                   checked={formData.inactiveEmail}
                   onChange={e => setFormData({...formData, inactiveEmail: e.target.checked})}
                 />
-                <span className="text-sm font-medium text-red-700" title="Marcar si los emails rebotan o la empresa no contesta">Email Inactivo</span>
+                <span className="text-sm font-medium text-red-700" title={t('companies.form.inactiveEmailTooltip')}>{t('companies.form.inactiveEmail')}</span>
               </label>
             </div>
             <div className="md:col-span-3 flex justify-end mt-4 pt-4 border-t border-zinc-100">
               <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">
-                {editingId ? 'Actualizar' : 'Guardar'}
+                {editingId ? t('companies.form.update') : t('companies.form.save')}
               </button>
             </div>
           </form>
@@ -462,7 +464,7 @@ export const Companies: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
             <input 
               type="text" 
-              placeholder="Buscar empresa por nombre, localidad, contacto..." 
+              placeholder={t('companies.searchPlaceholder')}
               className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -475,7 +477,7 @@ export const Companies: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.length === 0 ? (
           <div className="col-span-full py-12 text-center text-zinc-500 bg-white rounded-2xl border border-dashed border-zinc-200">
-            No se encontraron empresas.
+            {t('companies.noCompanies')}
           </div>
         ) : (
           filtered.map(c => (
@@ -491,16 +493,16 @@ export const Companies: React.FC = () => {
                   </div>
                   {/* Etiquetas de estado dinámicas */}
                   {c.acceptedYears?.includes(academicYear) && (
-                    <span className="bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">Colabora</span>
+                    <span className="bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">{t('companies.badge.collab')}</span>
                   )}
                   {c.rejectedYears?.includes(academicYear) && (
-                    <span className="bg-zinc-100 text-zinc-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">No colabora</span>
+                    <span className="bg-zinc-100 text-zinc-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">{t('companies.badge.noCollab')}</span>
                   )}
                   {c.prospectingYears?.includes(academicYear) && !c.acceptedYears?.includes(academicYear) && !c.rejectedYears?.includes(academicYear) && (
-                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">Prospección</span>
+                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">{t('companies.badge.prospect')}</span>
                   )}
                   {!!c.inactiveEmail && (
-                    <span className="bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">Email Inactivo</span>
+                    <span className="bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">{t('companies.badge.inactive')}</span>
                   )}
                 </div>
                 <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -528,7 +530,7 @@ export const Companies: React.FC = () => {
               
               {(c.instructorName || c.instructorEmail) && (
                 <div className="mb-4 bg-zinc-50 border border-zinc-100 rounded-xl p-3" onClick={(e) => e.stopPropagation()}>
-                  <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Instructor/a Asignado</div>
+                  <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">{t('companies.form.instructorTitle').split(' (')[0]}</div>
                   <div className="text-sm font-medium text-zinc-800">{c.instructorName || 'Nombre no disponible'} {c.instructorDni ? `(${c.instructorDni})` : ''}</div>
                   <div className="text-sm text-zinc-500">{c.instructorEmail || 'Email no disponible'}</div>
                 </div>
@@ -547,7 +549,7 @@ export const Companies: React.FC = () => {
                     onClick={(e) => e.stopPropagation()}
                     className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline flex items-center ml-1"
                   >
-                    Ver en Google Maps
+                    {t('companies.viewMaps')}
                   </a>
                 )}
               </div>
@@ -562,14 +564,14 @@ export const Companies: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0"><Trash2 size={24} /></div>
-              <h3 className="text-xl font-bold text-zinc-900">Eliminar empresa</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('companies.delete.title')}</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Estás seguro de que deseas eliminar esta empresa? Esta acción no se puede deshacer y <strong>eliminará también toda la formación asociada</strong> a esta empresa.
+              {t('companies.delete.desc')}
             </p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
-              <button onClick={() => { deleteCompany(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors flex items-center">Sí, eliminar</button>
+              <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">{t('companies.cancel')}</button>
+              <button onClick={() => { deleteCompany(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors flex items-center">{t('students.delete.confirm')}</button>
             </div>
           </div>
         </div>
@@ -581,18 +583,18 @@ export const Companies: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0"><UploadCloud size={24} /></div>
-              <h3 className="text-xl font-bold text-zinc-900">Confirmar importación</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('companies.import.confirmTitle')}</h3>
             </div>
             <div className="space-y-4 mb-8">
-              <p className="text-zinc-600 leading-relaxed">Se han analizado los datos del archivo y esto es lo que se va a procesar:</p>
+              <p className="text-zinc-600 leading-relaxed">{t('companies.import.confirmDesc')}</p>
               <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2">
-                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Empresas nuevas:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.companies.length}</span></div>
-                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">Ya registradas (se omitirán):</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
+                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('companies.import.newCompanies')}</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.companies.length}</span></div>
+                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">{t('companies.import.skipped')}</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
-              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">Sí, importar todo</button>
+              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">{t('companies.cancel')}</button>
+              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">{t('companies.import.confirmButton')}</button>
             </div>
           </div>
         </div>
@@ -606,17 +608,17 @@ export const Companies: React.FC = () => {
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${importResult.error ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
                 {importResult.error ? <AlertTriangle size={24} /> : <CheckCircle2 size={24} />}
               </div>
-              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? 'Error en la importación' : 'Importación completada'}</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? t('companies.import.resultErrorTitle') : t('companies.import.resultSuccessTitle')}</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
               {importResult.error || (
                 <>
-                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'empresa' : 'empresas'} correctamente.
-                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">({importResult.skipped} omitidas por estar ya registradas)</span>}
+                  {t('companies.import.resultSuccessDesc', { count: importResult.count })}
+                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">{t('companies.import.resultSkipped', { skipped: importResult.skipped })}</span>}
                 </>
               )}
             </p>
-            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">Entendido</button></div>
+            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">{t('companies.import.understand')}</button></div>
           </div>
         </div>
       )}

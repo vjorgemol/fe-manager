@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { MapPin, Navigation, ChevronUp, ChevronDown, ExternalLink, AlertTriangle, Plus, Trash2, UserCheck } from 'lucide-react';
 import type { Placement } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Visits: React.FC = () => {
   const { placements, companies, students, originAddress } = useData();
+  const { t } = useLanguage();
   
   // Filtrar solo las asignaciones activas
   const activePlacements = placements.filter(p => p.status === 'active');
@@ -91,9 +93,9 @@ export const Visits: React.FC = () => {
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-4">
           <div className="text-amber-500 mt-0.5"><AlertTriangle size={20} /></div>
           <div>
-            <h4 className="font-bold text-amber-800">Dirección de Origen no configurada</h4>
+            <h4 className="font-bold text-amber-800">{t('visits.originNotSet')}</h4>
             <p className="text-sm text-amber-700 mt-1">
-              Es recomendable configurar tu dirección de origen en <strong>Ajustes &gt; Rutas y Visitas</strong> para que el cálculo de la ruta empiece desde tu ubicación habitual.
+              {t('visits.originNotSetDesc')}
             </p>
           </div>
         </div>
@@ -105,13 +107,13 @@ export const Visits: React.FC = () => {
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-16rem)] min-h-[400px]">
             <div className="p-4 border-b border-zinc-100 bg-zinc-50/50">
-              <h3 className="font-bold text-zinc-900">Alumnos Activos</h3>
-              <p className="text-xs text-zinc-500 mt-1">Selecciona a quién quieres visitar</p>
+              <h3 className="font-bold text-zinc-900">{t('visits.activeStudents')}</h3>
+              <p className="text-xs text-zinc-500 mt-1">{t('visits.selectToVisit')}</p>
             </div>
             
             <div className="flex-1 overflow-y-auto p-2">
               {activePlacements.length === 0 ? (
-                <div className="text-center py-8 text-zinc-400 text-sm">No hay prácticas activas.</div>
+                <div className="text-center py-8 text-zinc-400 text-sm">{t('visits.noActivePlacements')}</div>
               ) : (
                 <div className="space-y-2">
                   {activePlacements.map(p => {
@@ -149,8 +151,12 @@ export const Visits: React.FC = () => {
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-16rem)] min-h-[400px]">
             <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
               <div>
-                <h3 className="font-bold text-zinc-900">Itinerario Planificado</h3>
-                <p className="text-xs text-zinc-500 mt-1">{selectedVisits.length} paradas • {selectedVisits.length * 20} min de reuniones</p>
+                <h3 className="font-bold text-zinc-900">{t('visits.plannedItinerary')}</h3>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {t('visits.stops')
+                    .replace('{count}', String(selectedVisits.length))
+                    .replace('{time}', String(selectedVisits.length * 20))}
+                </p>
               </div>
               <div className="flex gap-2">
                 {/* Optimización automática deshabilitada por ahora */}
@@ -161,8 +167,8 @@ export const Visits: React.FC = () => {
               {selectedVisits.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-zinc-400">
                   <Navigation size={48} className="mb-4 opacity-20" />
-                  <p>Selecciona alumnos en la lista izquierda</p>
-                  <p className="text-sm mt-1">para añadirlos a tu ruta.</p>
+                  <p>{t('visits.emptyStateLine1')}</p>
+                  <p className="text-sm mt-1">{t('visits.emptyStateLine2')}</p>
                 </div>
               ) : (
                 <div className="relative">
@@ -176,7 +182,7 @@ export const Visits: React.FC = () => {
                         <MapPin size={14} />
                       </div>
                       <div className="flex-1 pt-1">
-                        <div className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Origen / Partida</div>
+                        <div className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">{t('visits.originDeparture')}</div>
                         <div className="text-sm font-medium text-zinc-800">{originAddress}</div>
                       </div>
                     </div>
@@ -237,7 +243,7 @@ export const Visits: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white py-3 px-4 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               >
                 <ExternalLink size={18} />
-                Abrir Ruta en Google Maps
+                {t('visits.openRouteInMaps')}
               </button>
             </div>
           </div>

@@ -2,21 +2,23 @@ import React, { useState } from 'react';
 import { MapPin, CalendarDays, Wrench } from 'lucide-react';
 import { Visits } from './Visits';
 import { DateCalculator } from '../components/tools/DateCalculator';
+import { useLanguage } from '../context/LanguageContext';
 
 type Tab = 'visits' | 'calculator';
 
 export const Tools: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('visits');
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
         <h2 className="text-3xl font-bold text-zinc-900 tracking-tight flex items-center gap-3">
           <Wrench className="text-primary-600" size={32} />
-          Herramientas
+          {t('tools.title')}
         </h2>
         <p className="text-zinc-500 mt-2">
-          Utilidades extra para facilitar la gestión diaria de la formación en centros de trabajo.
+          {t('tools.desc')}
         </p>
       </div>
 
@@ -34,7 +36,7 @@ export const Tools: React.FC = () => {
             `}
           >
             <MapPin size={18} />
-            Rutas y Visitas
+            {t('tools.tabVisits')}
           </button>
           <button
             onClick={() => setActiveTab('calculator')}
@@ -47,7 +49,7 @@ export const Tools: React.FC = () => {
             `}
           >
             <CalendarDays size={18} />
-            Calculadora de Fechas
+            {t('tools.tabCalculator')}
           </button>
         </nav>
       </div>

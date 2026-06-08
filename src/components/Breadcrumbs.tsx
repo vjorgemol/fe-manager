@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, ChevronRight } from 'lucide-react';
-
-const routeLabels: Record<string, string> = {
-  'students': 'Alumnos',
-  'companies': 'Empresas',
-  'placements': 'Formación',
-  'communications': 'Comunicaciones',
-  'tools': 'Herramientas',
-  'settings': 'Ajustes'
-};
+import { useLanguage } from '../context/LanguageContext';
 
 export const Breadcrumbs: React.FC = () => {
+  const { t } = useLanguage();
   const location = useLocation();
   const pathnames = location.pathname.split('/').filter((x) => x);
   const [editingName, setEditingName] = useState<string | null>(null);
@@ -34,6 +27,16 @@ export const Breadcrumbs: React.FC = () => {
     window.dispatchEvent(new CustomEvent('breadcrumb-click', { detail: { path } }));
   };
 
+  const getRouteLabel = (val: string) => {
+    if (val === 'students') return t('nav.students');
+    if (val === 'companies') return t('nav.companies');
+    if (val === 'placements') return t('nav.placements');
+    if (val === 'communications') return t('nav.communications');
+    if (val === 'tools') return t('nav.tools');
+    if (val === 'settings') return t('nav.settings');
+    return val.charAt(0).toUpperCase() + val.slice(1);
+  };
+
   return (
     <nav 
       className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-zinc-500 mb-4 sm:mb-6 print:hidden" 
@@ -45,7 +48,7 @@ export const Breadcrumbs: React.FC = () => {
         className="flex items-center gap-1 text-zinc-400 hover:text-primary-600 transition-colors duration-200"
       >
         <Home size={16} className="shrink-0" />
-        <span className="font-medium hidden sm:inline">Inicio</span>
+        <span className="font-medium hidden sm:inline">{t('nav.home')}</span>
       </Link>
       
       {(pathnames.length > 0 || editingName) && (
@@ -58,7 +61,7 @@ export const Breadcrumbs: React.FC = () => {
       {pathnames.map((value, index) => {
         const to = `/${pathnames.slice(0, index + 1).join('/')}`;
         const isLast = index === pathnames.length - 1 && !editingName;
-        const label = routeLabels[value] || value.charAt(0).toUpperCase() + value.slice(1);
+        const label = getRouteLabel(value);
 
         return (
           <React.Fragment key={to}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Lock, LogIn, Smartphone } from 'lucide-react';
 
 export const Login = () => {
@@ -10,6 +11,7 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { token, login } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   // Si ya tiene token, redirigir al inicio automáticamente
@@ -51,14 +53,26 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative">
+      {/* Language Switcher */}
+      <div className="absolute top-4 right-4 z-10">
+        <select
+          value={language}
+          onChange={(e) => setLanguage(e.target.value as 'es' | 'val')}
+          className="text-xs font-bold text-indigo-700 bg-white border border-slate-200 focus:ring-0 outline-none hover:bg-slate-50 px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition-colors"
+        >
+          <option value="es">Castellano</option>
+          <option value="val">Valencià</option>
+        </select>
+      </div>
+
       <div className="bg-white max-w-md w-full rounded-2xl shadow-xl overflow-hidden">
         <div className="bg-indigo-600 p-8 text-center">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
             <Lock className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">FCT Manager</h1>
-          <p className="text-indigo-100">Área de acceso restringido</p>
+          <p className="text-indigo-100">{t('login.restricted')}</p>
         </div>
         
         <div className="p-8">
@@ -66,7 +80,7 @@ export const Login = () => {
             {!require2FA ? (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Contraseña Maestra
+                  {t('login.password')}
                 </label>
                 <input
                   type="password"
@@ -82,10 +96,10 @@ export const Login = () => {
                 <div className="flex items-center justify-center w-12 h-12 bg-indigo-50 rounded-full mx-auto mb-4">
                   <Smartphone className="w-6 h-6 text-indigo-600" />
                 </div>
-                <h3 className="text-center font-bold text-slate-900 mb-2">Verificación en dos pasos</h3>
-                <p className="text-center text-sm text-slate-500 mb-6">Abre tu aplicación Authenticator e introduce el código de 6 dígitos.</p>
+                <h3 className="text-center font-bold text-slate-900 mb-2">{t('login.totpTitle')}</h3>
+                <p className="text-center text-sm text-slate-500 mb-6">{t('login.totpDesc')}</p>
                 <label className="block text-sm font-medium text-slate-700 mb-2 text-center">
-                  Código de verificación
+                  {t('login.totpCode')}
                 </label>
                 <input
                   type="text"
@@ -98,7 +112,7 @@ export const Login = () => {
                   autoFocus
                 />
                 <button type="button" onClick={() => { setRequire2FA(false); setTotpToken(''); setPassword(''); }} className="mt-4 text-sm text-indigo-600 hover:underline w-full text-center">
-                  Volver a introducir la contraseña
+                  {t('login.totpBack')}
                 </button>
               </div>
             )}
@@ -115,7 +129,7 @@ export const Login = () => {
               className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-colors disabled:opacity-70"
             >
               <LogIn className="w-5 h-5" />
-              {loading ? 'Verificando...' : 'Acceder'}
+              {loading ? t('login.loading') : t('login.access')}
             </button>
           </form>
         </div>

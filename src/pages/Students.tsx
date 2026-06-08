@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Minus, Trash2, Search, Edit, Mail, X, UploadCloud, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import type { Student } from '../types';
@@ -11,6 +12,7 @@ import type { Student } from '../types';
 export const Students: React.FC = () => {
   // Acceso al estado global de la aplicación a través del contexto
   const { students, addStudent, deleteStudent, updateStudent, academicYear } = useData();
+  const { t } = useLanguage();
 
   // Estados locales para la gestión de la interfaz
   const [isAdding, setIsAdding] = useState(false);
@@ -304,10 +306,10 @@ export const Students: React.FC = () => {
       <div className="flex justify-between items-end">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Alumnos</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">{t('students.title')}</h2>
             <span className="bg-primary-100 text-primary-700 text-sm font-semibold px-3 py-1 rounded-full">{students.length}</span>
           </div>
-          <p className="text-zinc-500 mt-2">Gestiona el listado de alumnos para la FE.</p>
+          <p className="text-zinc-500 mt-2">{t('students.desc')}</p>
         </div>
         <div className="flex gap-3">
           {/* Input de archivo oculto activado por el botón */}
@@ -317,14 +319,14 @@ export const Students: React.FC = () => {
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <UploadCloud size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">Importar Aules/FE Connect</span>
+            <span className="hidden sm:inline">{t('students.importAules')}</span>
           </button>
           <button
             onClick={() => setShowExportOptions(true)}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <Download size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">Exportar CSV</span>
+            <span className="hidden sm:inline">{t('students.exportCsv')}</span>
           </button>
           <button
             onClick={() => {
@@ -348,7 +350,7 @@ export const Students: React.FC = () => {
             ) : (
               <Plus size={20} className="sm:mr-2" />
             )}
-            <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Añadir Alumno'}</span>
+            <span className="hidden sm:inline">{isAdding ? t('students.cancel') : t('students.newStudent')}</span>
           </button>
         </div>
       </div>
@@ -356,43 +358,43 @@ export const Students: React.FC = () => {
       {/* Formulario de Alta/Edición */}
       {isAdding && (
         <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm animate-in slide-in-from-top-4 duration-300">
-          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? 'Editar Alumno' : 'Nuevo Alumno'}</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? t('students.editStudent') : t('students.newStudent')}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.name')}</label>
               <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Apellidos</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.lastname')}</label>
               <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.email')}</label>
               <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Teléfono Móvil</label>
-              <input type="tel" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.phone')}</label>
+              <input type="tel" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Foto del Alumno (Opcional)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.photo')}</label>
               <div className="flex items-center gap-4">
                 {formData.photoBase64 && <img src={formData.photoBase64} alt="Preview" className="w-12 h-12 rounded-full object-cover border border-zinc-200 shadow-sm" />}
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer" />
               </div>
             </div>
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Notas / Indicaciones (Opcional)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.notes')}</label>
               <textarea
                 rows={3}
-                placeholder="Añade cualquier observación relevante sobre el alumno..."
+                placeholder={t('students.form.notesPlaceholder')}
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-y"
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
             <div className="md:col-span-3 flex justify-end mt-2">
-              <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">{editingId ? 'Actualizar' : 'Guardar'}</button>
+              <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">{editingId ? t('students.form.update') : t('students.save')}</button>
             </div>
           </form>
         </div>
@@ -404,7 +406,7 @@ export const Students: React.FC = () => {
         <div className="p-4 border-b border-zinc-100 flex items-center bg-zinc-50/50">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-            <input type="text" placeholder="Buscar alumno..." className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none" value={search} onChange={e => setSearch(e.target.value)} />
+            <input type="text" placeholder={t('students.searchPlaceholder')} className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
 
@@ -413,21 +415,21 @@ export const Students: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-zinc-50/50 border-b border-zinc-100">
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Nombre Completo</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Acciones</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('students.form.fullName')}</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('students.form.email')}</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">{t('students.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.length === 0 ? (
-                <tr><td colSpan={3} className="px-6 py-8 text-center text-zinc-500">No se encontraron alumnos.</td></tr>
+                <tr><td colSpan={3} className="px-6 py-8 text-center text-zinc-500">{t('students.noStudents')}</td></tr>
               ) : (
                 filtered.map(s => (
                   <tr 
-                    key={s.id} 
-                    className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" 
-                    onClick={() => handleEdit(s)}
-                    onDoubleClick={(e) => { e.stopPropagation(); setViewingStudent(s as Student); }}
+                     key={s.id} 
+                     className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" 
+                     onClick={() => handleEdit(s)}
+                     onDoubleClick={(e) => { e.stopPropagation(); setViewingStudent(s as Student); }}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -437,7 +439,7 @@ export const Students: React.FC = () => {
                             e.stopPropagation();
                             setViewingStudent(s as Student);
                           }}
-                          title="Ver detalles del alumno"
+                          title={t('students.details.view')}
                         >
                           {s.photoBase64 ? (
                             <img src={s.photoBase64} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-200 shadow-sm" />
@@ -453,8 +455,8 @@ export const Students: React.FC = () => {
                     <td className="px-6 py-4 text-zinc-500">{s.email}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEdit(s)} title="Editar" className="p-2 text-zinc-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"><Edit size={18} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(s.id); }} title="Eliminar" className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEdit(s)} title={t('students.details.edit')} className="p-2 text-zinc-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"><Edit size={18} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(s.id); }} title={t('students.delete.title')} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -467,7 +469,7 @@ export const Students: React.FC = () => {
         {/* Vista de Tarjetas (Mobile) */}
         <div className="md:hidden divide-y divide-zinc-100">
           {filtered.length === 0 ? (
-            <div className="px-6 py-8 text-center text-zinc-500">No se encontraron alumnos.</div>
+            <div className="px-6 py-8 text-center text-zinc-500">{t('students.noStudents')}</div>
           ) : (
             filtered.map(s => (
               <div 
@@ -483,7 +485,7 @@ export const Students: React.FC = () => {
                       e.stopPropagation();
                       setViewingStudent(s as Student);
                     }}
-                    title="Ver detalles del alumno"
+                    title={t('students.details.view')}
                   >
                     {s.photoBase64 ? (
                       <img src={s.photoBase64} alt="" className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm" />
@@ -520,14 +522,14 @@ export const Students: React.FC = () => {
               {viewingStudent.phone && <p className="text-zinc-500 font-medium mt-1 flex items-center justify-center gap-2"><span className="text-zinc-400">Tel:</span><a href={`tel:${viewingStudent.phone}`} className="text-primary-600 hover:underline">{viewingStudent.phone}</a></p>}
               {viewingStudent.notes && (
                 <div className="mt-4 w-full text-left bg-amber-50 border border-amber-100 rounded-xl p-3">
-                  <span className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Notas</span>
+                  <span className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">{t('students.form.notes')}</span>
                   <p className="text-sm text-amber-900 whitespace-pre-wrap">{viewingStudent.notes}</p>
                 </div>
               )}
             </div>
             <div className="p-6 bg-zinc-50/50 flex flex-col gap-3">
-              <a href={`mailto:${viewingStudent.email}`} className="w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3.5 rounded-xl font-medium flex items-center justify-center shadow-md"><Mail size={20} className="mr-2" /> Enviar Correo</a>
-              <button onClick={() => { setViewingStudent(null); handleEdit(viewingStudent); }} className="w-full bg-white border-2 border-zinc-200 hover:border-zinc-300 text-zinc-700 px-5 py-3.5 rounded-xl font-medium flex items-center justify-center"><Edit size={20} className="mr-2" /> Editar Datos</button>
+              <a href={`mailto:${viewingStudent.email}`} className="w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3.5 rounded-xl font-medium flex items-center justify-center shadow-md"><Mail size={20} className="mr-2" /> {t('students.details.sendEmail')}</a>
+              <button onClick={() => { setViewingStudent(null); handleEdit(viewingStudent); }} className="w-full bg-white border-2 border-zinc-200 hover:border-zinc-300 text-zinc-700 px-5 py-3.5 rounded-xl font-medium flex items-center justify-center"><Edit size={20} className="mr-2" /> {t('students.details.edit')}</button>
             </div>
           </div>
         </div>
@@ -539,12 +541,12 @@ export const Students: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0"><Trash2 size={24} /></div>
-              <h3 className="text-xl font-bold text-zinc-900">Eliminar alumno</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('students.delete.title')}</h3>
             </div>
-            <p className="text-zinc-600 mb-8 leading-relaxed">¿Estás seguro de que deseas eliminar este alumno? Esta acción no se puede deshacer.</p>
+            <p className="text-zinc-600 mb-8 leading-relaxed">{t('students.delete.desc')}</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
-              <button onClick={() => { deleteStudent(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md flex items-center">Sí, eliminar</button>
+              <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">{t('students.cancel')}</button>
+              <button onClick={() => { deleteStudent(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md flex items-center">{t('students.delete.confirm')}</button>
             </div>
           </div>
         </div>
@@ -556,18 +558,18 @@ export const Students: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0"><UploadCloud size={24} /></div>
-              <h3 className="text-xl font-bold text-zinc-900">Confirmar importación</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('students.import.confirmTitle')}</h3>
             </div>
             <div className="space-y-4 mb-8">
-              <p className="text-zinc-600 leading-relaxed">Se han analizado los datos del archivo y esto es lo que se va a procesar:</p>
+              <p className="text-zinc-600 leading-relaxed">{t('students.import.confirmDesc')}</p>
               <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2">
-                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Alumnos nuevos:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.students.length}</span></div>
-                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">Ya registrados (se omitirán):</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
+                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('students.import.newStudents')}</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.students.length}</span></div>
+                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">{t('students.import.skipped')}</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
-              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">Sí, importar todo</button>
+              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">{t('students.cancel')}</button>
+              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">{t('students.import.confirmButton')}</button>
             </div>
           </div>
         </div>
@@ -581,17 +583,17 @@ export const Students: React.FC = () => {
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${importResult.error ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
                 {importResult.error ? <AlertTriangle size={24} /> : <CheckCircle2 size={24} />}
               </div>
-              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? 'Error en la importación' : 'Importación completada'}</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? t('students.import.resultErrorTitle') : t('students.import.resultSuccessTitle')}</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
               {importResult.error || (
                 <>
-                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'alumno' : 'alumnos'} correctamente.
-                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">({importResult.skipped} omitidos por estar ya registrados)</span>}
+                  {t('students.import.resultSuccessDesc', { count: importResult.count })}
+                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">{t('students.import.resultSkipped', { skipped: importResult.skipped })}</span>}
                 </>
               )}
             </p>
-            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">Entendido</button></div>
+            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">{t('students.import.understand')}</button></div>
           </div>
         </div>
       )}
@@ -604,11 +606,11 @@ export const Students: React.FC = () => {
               <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0">
                 <Download size={24} />
               </div>
-              <h3 className="text-xl font-bold text-zinc-900">Exportar Alumnos</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('students.export.title')}</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Deseas incluir las fotos de los alumnos en el archivo CSV?
-              <span className="block mt-2 text-sm text-zinc-500 italic">Nota: Incluir imágenes aumentará significativamente el tamaño del archivo.</span>
+              {t('students.export.desc')}
+              <span className="block mt-2 text-sm text-zinc-500 italic">{t('students.export.note')}</span>
             </p>
             <div className="grid grid-cols-1 gap-3">
               <button
@@ -616,19 +618,19 @@ export const Students: React.FC = () => {
                 className="w-full px-6 py-3 rounded-xl font-medium bg-white border-2 border-primary-100 hover:border-primary-200 text-primary-700 transition-colors flex items-center justify-center gap-2"
               >
                 <UploadCloud size={20} />
-                Sí, incluir imágenes (CSV pesado)
+                {t('students.export.withImages')}
               </button>
               <button
                 onClick={() => exportToCSV(false)}
                 className="w-full px-6 py-3 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors"
               >
-                No, solo texto (Recomendado)
+                {t('students.export.textOnly')}
               </button>
               <button
                 onClick={() => setShowExportOptions(false)}
                 className="w-full px-6 py-3 rounded-xl font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
               >
-                Cancelar
+                {t('students.cancel')}
               </button>
             </div>
           </div>

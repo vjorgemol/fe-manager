@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Database, UploadCloud, DownloadCloud, AlertTriangle, CheckCircle2, Plus, UserCheck, Trash2, Mail, Lock, ShieldCheck, ShieldAlert, Smartphone, ChevronDown, ChevronUp, Settings as SettingsIcon, Shield, Server, MapPin } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const AccordionItem: React.FC<{ title: string; description: string; icon: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, description, icon, defaultOpen = false, children }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -33,6 +34,7 @@ const AccordionItem: React.FC<{ title: string; description: string; icon: React.
 };
 
 export const Settings: React.FC = () => {
+  const { t } = useLanguage();
   const { 
     allStudents, companies, allPlacements, teachers, schoolName, academicYear, 
     reminderDays, setReminderDays, tutorName, setTutorName, tutorEmail, setTutorEmail, 
@@ -168,12 +170,12 @@ export const Settings: React.FC = () => {
 
         const parseError = xmlDoc.getElementsByTagName("parsererror");
         if (parseError.length > 0) {
-          throw new Error("El archivo XML no tiene un formato válido.");
+          throw new Error(t('settings.xmlFormatError'));
         }
 
         const backupRoot = xmlDoc.getElementsByTagName("fe_connect_backup")[0];
         if (!backupRoot) {
-          throw new Error("El archivo no es una copia de seguridad válida de FE Connect.");
+          throw new Error(t('settings.xmlNotBackupError'));
         }
 
         const meta = backupRoot.getElementsByTagName("metadata")[0];
@@ -246,7 +248,7 @@ export const Settings: React.FC = () => {
           teachers: teachersList
         });
 
-        setImportStatus({ type: 'success', message: 'Datos restaurados correctamente.' });
+        setImportStatus({ type: 'success', message: t('settings.importSuccessMessage') });
         if (fileInputRef.current) fileInputRef.current.value = '';
 
       } catch (err: any) {
@@ -259,8 +261,8 @@ export const Settings: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
       <div>
-        <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Ajustes y Datos</h2>
-        <p className="text-zinc-500 mt-2">Personaliza el comportamiento y gestiona la seguridad y almacenamiento del sistema.</p>
+        <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">{t('settings.header')}</h2>
+        <p className="text-zinc-500 mt-2">{t('settings.subheader')}</p>
       </div>
 
       {importStatus && (
@@ -269,7 +271,7 @@ export const Settings: React.FC = () => {
         }`}>
           {importStatus.type === 'success' ? <CheckCircle2 className="shrink-0 mt-0.5" size={20} /> : <AlertTriangle className="shrink-0 mt-0.5" size={20} />}
           <div>
-            <h4 className="font-semibold">{importStatus.type === 'success' ? 'Éxito' : 'Error'}</h4>
+            <h4 className="font-semibold">{importStatus.type === 'success' ? t('settings.successTitle') : t('settings.errorTitle')}</h4>
             <p className="text-sm mt-1">{importStatus.message}</p>
           </div>
         </div>
@@ -277,16 +279,16 @@ export const Settings: React.FC = () => {
 
       {/* --- CONFIGURACIÓN GENERAL --- */}
       <AccordionItem 
-        title="Configuración General" 
-        description="Datos del ciclo, tutores, profesores y recordatorios."
+        title={t('settings.tabGeneral')} 
+        description={t('settings.tabGeneralDesc')}
         icon={<SettingsIcon size={24} />}
         defaultOpen={true}
       >
         <div className="space-y-6">
           <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-zinc-900">Días de antelación para recordatorios</h3>
-              <p className="text-zinc-500 text-sm mt-1">Configura cuántos días antes del inicio/fin se mostrarán los avisos de formación en el Dashboard y Comunicaciones.</p>
+              <h3 className="text-lg font-semibold text-zinc-900">{t('settings.reminderDaysTitle')}</h3>
+              <p className="text-zinc-500 text-sm mt-1">{t('settings.reminderDaysDesc')}</p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
               <input 
@@ -295,23 +297,23 @@ export const Settings: React.FC = () => {
                 value={reminderDays}
                 onChange={e => setReminderDays(Number(e.target.value))}
               />
-              <span className="text-zinc-500 font-medium whitespace-nowrap">días</span>
+              <span className="text-zinc-500 font-medium whitespace-nowrap">{t('settings.daysLabel')}</span>
             </div>
           </div>
 
           <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-zinc-900">Datos del Tutor</h3>
-              <p className="text-zinc-500 text-sm mt-1">Este nombre y correo se usarán como remitente en las comunicaciones automáticas.</p>
+              <h3 className="text-lg font-semibold text-zinc-900">{t('settings.tutorDataTitle')}</h3>
+              <p className="text-zinc-500 text-sm mt-1">{t('settings.tutorDataDesc')}</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
               <input 
-                type="text" placeholder="Nombre del Tutor"
+                type="text" placeholder={t('settings.tutorNamePlaceholder')}
                 className="w-full sm:w-48 px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={tutorName} onChange={e => setTutorName(e.target.value)}
               />
               <input 
-                type="email" placeholder="Correo electrónico"
+                type="email" placeholder={t('settings.tutorEmailPlaceholder')}
                 className="w-full sm:w-64 px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={tutorEmail} onChange={e => setTutorEmail(e.target.value)}
               />
@@ -320,12 +322,12 @@ export const Settings: React.FC = () => {
 
           <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-zinc-900">Datos del Ciclo Formativo</h3>
-              <p className="text-zinc-500 text-sm mt-1">Este nombre aparecerá en el cuerpo de los correos automáticos.</p>
+              <h3 className="text-lg font-semibold text-zinc-900">{t('settings.cycleDataTitle')}</h3>
+              <p className="text-zinc-500 text-sm mt-1">{t('settings.cycleDataDesc')}</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
               <input 
-                type="text" placeholder="Ej: Desarrollo de Aplicaciones Web"
+                type="text" placeholder={t('settings.cycleNamePlaceholder')}
                 className="w-full sm:w-80 px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={cycleName} onChange={e => setCycleName(e.target.value)}
               />
@@ -335,20 +337,20 @@ export const Settings: React.FC = () => {
                   className="w-24 px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={cycleHours} onChange={e => setCycleHours(Number(e.target.value))}
                 />
-                <span className="text-sm font-medium text-zinc-500">horas</span>
+                <span className="text-sm font-medium text-zinc-500">{t('settings.hoursLabel')}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex flex-col md:flex-row items-start justify-between gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-zinc-900">Gestión de Profesores</h3>
-              <p className="text-zinc-500 text-sm mt-1">Añade los nombres de los profesores que gestionarán la formación.</p>
+              <h3 className="text-lg font-semibold text-zinc-900">{t('settings.teachersManagementTitle')}</h3>
+              <p className="text-zinc-500 text-sm mt-1">{t('settings.teachersManagementDesc')}</p>
             </div>
             <div className="flex flex-col gap-4 w-full md:w-auto min-w-[300px]">
               <div className="flex gap-2">
                 <input 
-                  type="text" placeholder="Nombre completo del profesor"
+                  type="text" placeholder={t('settings.teacherNamePlaceholder')}
                   className="flex-1 px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={newTeacherName}
                   onChange={e => setNewTeacherName(e.target.value)}
@@ -384,7 +386,7 @@ export const Settings: React.FC = () => {
                   </div>
                 ))}
                 {teachers.length === 0 && (
-                  <p className="text-center text-xs text-zinc-400 py-2">No hay profesores registrados.</p>
+                  <p className="text-center text-xs text-zinc-400 py-2">{t('settings.noTeachers')}</p>
                 )}
               </div>
             </div>
@@ -394,49 +396,49 @@ export const Settings: React.FC = () => {
 
       {/* --- PLANTILLAS DE EMAIL --- */}
       <AccordionItem
-        title="Plantillas de Email"
-        description="Personaliza los textos de los correos automáticos."
+        title={t('settings.tabTemplates')}
+        description={t('settings.tabTemplatesDesc')}
         icon={<Mail size={24} />}
       >
         <div className="grid grid-cols-1 gap-6">
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">1. Prospección de Empresas (Presentación)</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">{t('settings.templateProspectingLabel')}</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-              placeholder="Escribe la plantilla para contactar con nuevas empresas..."
+              placeholder={t('settings.templateProspectingPlaceholder')}
               value={templateProspecting} onChange={e => setTemplateProspecting(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">2. Aviso de Inicio de Formación</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">{t('settings.templateStartLabel')}</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-              placeholder="Escribe la plantilla para avisar del inicio de la formación..."
+              placeholder={t('settings.templateStartPlaceholder')}
               value={templateStart} onChange={e => setTemplateStart(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">3. Seguimiento Semanal</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">{t('settings.templateTrackingLabel')}</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-              placeholder="Escribe la plantilla para el seguimiento semanal..."
+              placeholder={t('settings.templateTrackingPlaceholder')}
               value={templateTracking} onChange={e => setTemplateTracking(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2">4. Aviso de Finalización de Formación</label>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">{t('settings.templateEndLabel')}</label>
             <textarea 
               className="w-full h-32 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-              placeholder="Escribe la plantilla para avisar del fin de la formación..."
+              placeholder={t('settings.templateEndPlaceholder')}
               value={templateEnd} onChange={e => setTemplateEnd(e.target.value)}
             />
           </div>
 
           <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-            <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">Variables dinámicas disponibles:</h4>
+            <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">{t('settings.dynamicVariablesTitle')}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {['{studentName}', '{companyName}', '{contactPerson}', '{cycleName}', '{schoolName}', '{tutorName}', '{tutorEmail}', '{startDate}', '{endDate}', '{hours}'].map(v => (
                 <code key={v} className="text-[10px] bg-white border border-indigo-100 px-2 py-1 rounded text-indigo-600 font-mono text-center shadow-sm">{v}</code>
@@ -448,20 +450,20 @@ export const Settings: React.FC = () => {
 
       {/* --- PLANIFICACIÓN DE VISITAS --- */}
       <AccordionItem
-        title="Rutas y Visitas"
-        description="Configura la dirección de origen y la integración con Google Maps."
+        title={t('settings.tabVisitsTitle')}
+        description={t('settings.tabVisitsDesc')}
         icon={<MapPin size={24} />}
       >
         <div className="grid grid-cols-1 gap-6">
           <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200">
             <h3 className="text-lg font-bold text-zinc-900 mb-2 flex items-center gap-2">
-              <MapPin size={20} className="text-indigo-600" /> Dirección de Origen
+              <MapPin size={20} className="text-indigo-600" /> {t('settings.originAddressTitle')}
             </h3>
-            <p className="text-zinc-500 mb-4 text-sm">Establece la dirección predeterminada desde la que partirás para realizar las visitas a las empresas (ej. la dirección de tu centro educativo o tu domicilio). La optimización de la ruta tomará este punto como origen.</p>
+            <p className="text-zinc-500 mb-4 text-sm">{t('settings.originAddressDesc')}</p>
             <input 
               type="text" 
               className="w-full px-4 py-3 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-              placeholder="Ej: Calle Principal 123, Madrid"
+              placeholder={t('settings.originAddressPlaceholder')}
               value={originAddress} 
               onChange={e => setOriginAddress(e.target.value)}
             />
@@ -471,8 +473,8 @@ export const Settings: React.FC = () => {
 
       {/* --- SEGURIDAD Y ACCESO --- */}
       <AccordionItem
-        title="Seguridad y Acceso"
-        description="Contraseña maestra y Verificación en Dos Pasos (2FA)."
+        title={t('settings.tabSecurityTitle')}
+        description={t('settings.tabSecurityDesc')}
         icon={<Shield size={24} />}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -480,8 +482,8 @@ export const Settings: React.FC = () => {
             <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
               <Lock size={20} />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 mb-2">Cambiar Contraseña</h3>
-            <p className="text-zinc-500 mb-6 text-sm">Actualiza tu contraseña maestra frecuentemente.</p>
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('settings.changePasswordTitle')}</h3>
+            <p className="text-zinc-500 mb-6 text-sm">{t('settings.changePasswordDesc')}</p>
             <form onSubmit={async (e) => {
               e.preventDefault();
               const target = e.target as any;
@@ -495,20 +497,20 @@ export const Settings: React.FC = () => {
                   body: JSON.stringify({ oldPassword, newPassword })
                 });
                 if (res.ok) {
-                  alert('Contraseña actualizada correctamente');
+                  alert(t('settings.passwordUpdatedAlert'));
                   target.reset();
                 } else {
                   const data = await res.json();
-                  alert(data.error || 'Error al cambiar la contraseña');
+                  alert(data.error || t('settings.passwordUpdateErrorAlert'));
                 }
               } catch (error) {
-                alert('Error de conexión');
+                alert(t('settings.connectionErrorAlert'));
               }
             }} className="space-y-4 mt-auto">
-              <input type="password" name="oldPassword" placeholder="Contraseña Actual" required className="w-full px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
-              <input type="password" name="newPassword" placeholder="Nueva Contraseña" required className="w-full px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+              <input type="password" name="oldPassword" placeholder={t('settings.oldPasswordPlaceholder')} required className="w-full px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+              <input type="password" name="newPassword" placeholder={t('settings.newPasswordPlaceholder')} required className="w-full px-4 py-2 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
               <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors">
-                Actualizar
+                {t('settings.updateButton')}
               </button>
             </form>
           </div>
@@ -517,20 +519,20 @@ export const Settings: React.FC = () => {
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${twoFactorEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-600'}`}>
               {twoFactorEnabled ? <ShieldCheck size={20} /> : <ShieldAlert size={20} />}
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 mb-2">Verificación en dos pasos (2FA)</h3>
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('settings.twoFactor')}</h3>
             <p className="text-zinc-500 mb-6 text-sm">
-              Requiere un código de Microsoft Authenticator o Google Authenticator además de la contraseña.
+              {t('settings.twoFactorDesc')}
             </p>
 
             {twoFactorEnabled ? (
               <div className="space-y-4 mt-auto">
                 <div className="p-3 bg-emerald-100/50 text-emerald-800 rounded-xl flex items-center gap-3 border border-emerald-200/50">
                   <CheckCircle2 className="shrink-0" size={18} />
-                  <p className="text-sm font-medium">Activada correctamente.</p>
+                  <p className="text-sm font-medium">{t('settings.twoFactorActivated')}</p>
                 </div>
                 <button 
                   onClick={async () => {
-                    const pwd = prompt('Introduce tu contraseña maestra para desactivar el 2FA:');
+                    const pwd = prompt(t('settings.twoFactorDisablePrompt'));
                     if (!pwd) return;
                     try {
                       const token = localStorage.getItem('token');
@@ -541,18 +543,18 @@ export const Settings: React.FC = () => {
                       });
                       if (res.ok) {
                         setTwoFactorEnabled(false);
-                        alert('2FA desactivado correctamente');
+                        alert(t('settings.twoFactorDisabledAlert'));
                       } else {
                         const data = await res.json();
-                        alert(data.error || 'Error al desactivar');
+                        alert(data.error || t('settings.twoFactorDisableErrorAlert'));
                       }
                     } catch (e) {
-                      alert('Error de conexión');
+                      alert(t('settings.connectionErrorAlert'));
                     }
                   }}
                   className="w-full px-5 py-2.5 rounded-xl font-medium transition-colors bg-white border border-red-200 text-red-600 hover:bg-red-50"
                 >
-                  Desactivar 2FA
+                  {t('settings.twoFactorDisabled')}
                 </button>
               </div>
             ) : (
@@ -567,16 +569,16 @@ export const Settings: React.FC = () => {
                         setQrCodeUrl(data.qrCodeDataUrl);
                         setTotpSecret(data.secret);
                       } catch (e) {
-                        alert('Error generando código QR');
+                        alert(t('settings.qrGenerationErrorAlert'));
                       }
                     }}
                     className="w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-2.5 rounded-xl font-medium transition-colors inline-flex items-center justify-center gap-2"
                   >
-                    <Smartphone size={18} /> Configurar Autenticador
+                    <Smartphone size={18} /> {t('settings.configureAuthenticator')}
                   </button>
                 ) : (
                   <div className="p-4 bg-white border border-zinc-200 rounded-xl space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                    <p className="text-xs text-zinc-500 font-medium">Escanea este QR con tu app Authenticator y pon el código:</p>
+                    <p className="text-xs text-zinc-500 font-medium">{t('settings.scanQrInstructions')}</p>
                     <div className="flex justify-center bg-zinc-50 p-2 rounded-lg">
                       <img src={qrCodeUrl} alt="QR Code 2FA" className="w-32 h-32" />
                     </div>
@@ -605,15 +607,15 @@ export const Settings: React.FC = () => {
                               setTotpInput('');
                             } else {
                               const data = await res.json();
-                              setTotpError(data.error || 'Código incorrecto');
+                              setTotpError(data.error || t('settings.incorrectCodeAlert'));
                             }
                           } catch (e) {
-                            setTotpError('Error de conexión');
+                            setTotpError(t('settings.connectionErrorAlert'));
                           }
                         }}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-medium transition-colors text-sm"
                       >
-                        Verificar
+                        {t('settings.verifyButton')}
                       </button>
                     </div>
                   </div>
@@ -626,8 +628,8 @@ export const Settings: React.FC = () => {
 
       {/* --- MANTENIMIENTO Y COPIAS --- */}
       <AccordionItem
-        title="Mantenimiento y Copias"
-        description="Exportar, Restaurar y almacenamiento de Base de Datos."
+        title={t('settings.tabMaintenanceTitle')}
+        description={t('settings.tabMaintenanceDesc')}
         icon={<Server size={24} />}
       >
         <div className="space-y-6">
@@ -636,10 +638,10 @@ export const Settings: React.FC = () => {
               <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4">
                 <DownloadCloud size={20} />
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 mb-2">Exportar Datos</h3>
-              <p className="text-zinc-500 mb-6 text-sm">Descarga un archivo XML con toda la información del sistema.</p>
+              <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('settings.exportDataTitle')}</h3>
+              <p className="text-zinc-500 mb-6 text-sm">{t('settings.exportDataDesc')}</p>
               <button onClick={exportToXML} className="mt-auto w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-2.5 rounded-xl font-medium transition-colors">
-                Descargar XML
+                {t('settings.downloadXmlButton')}
               </button>
             </div>
 
@@ -647,11 +649,11 @@ export const Settings: React.FC = () => {
               <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-4">
                 <UploadCloud size={20} />
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 mb-2">Restaurar Datos</h3>
-              <p className="text-zinc-500 mb-6 text-sm">Sube un archivo XML anterior. <span className="text-red-500 font-medium">Sobrescribirá tus datos.</span></p>
+              <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('settings.restoreDataTitle')}</h3>
+              <p className="text-zinc-500 mb-6 text-sm">{t('settings.restoreDataDesc')}</p>
               <input type="file" accept=".xml" ref={fileInputRef} onChange={importFromXML} className="hidden" />
               <button onClick={() => fileInputRef.current?.click()} className="mt-auto w-full bg-white hover:bg-zinc-100 border border-zinc-300 text-zinc-700 px-5 py-2.5 rounded-xl font-medium transition-colors">
-                Subir XML
+                {t('settings.uploadXmlButton')}
               </button>
             </div>
           </div>
@@ -659,10 +661,9 @@ export const Settings: React.FC = () => {
           <div className="bg-blue-50/50 p-5 rounded-xl border border-blue-100 flex items-start gap-4">
             <Database className="text-blue-500 shrink-0 mt-0.5" size={20} />
             <div>
-              <h4 className="font-semibold text-blue-900 text-sm">Sobre el almacenamiento</h4>
+              <h4 className="font-semibold text-blue-900 text-sm">{t('settings.aboutStorageTitle')}</h4>
               <p className="text-xs text-blue-800/80 mt-1">
-                Tus datos están protegidos en tu propio servidor mediante SQLite. No se envían a terceros. 
-                Utiliza la exportación de XML periódicamente como copia de seguridad física de tus datos.
+                {t('settings.aboutStorageDesc')}
               </p>
             </div>
           </div>

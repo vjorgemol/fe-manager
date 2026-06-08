@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Students } from './pages/Students';
@@ -21,8 +22,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <AuthProvider>
-      <DataProvider>
-        <BrowserRouter>
+      <LanguageProvider>
+        <DataProvider>
+          <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -37,6 +39,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </DataProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

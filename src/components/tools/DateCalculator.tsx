@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, Briefcase, Info, CalendarCheck } from 'lucide-react';
 import { calculateEndDate } from '../../utils/holidays';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, ca } from 'date-fns/locale';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const DateCalculator: React.FC = () => {
   const [startDate, setStartDate] = useState<string>('');
   const [totalHours, setTotalHours] = useState<number>(400);
   const [dailyHours, setDailyHours] = useState<number>(8);
   const [result, setResult] = useState<{ endDate: string, workDays: number } | null>(null);
+  const { t, language } = useLanguage();
+  const locale = language === 'val' ? ca : es;
 
   useEffect(() => {
     if (startDate && totalHours > 0 && dailyHours > 0) {
@@ -25,10 +28,10 @@ export const DateCalculator: React.FC = () => {
         <div className="p-6 border-b border-zinc-100 bg-zinc-50/50">
           <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2">
             <CalendarIcon size={20} className="text-primary-600" />
-            Cálculo de Fechas de Formación
+            {t('calc.header')}
           </h3>
           <p className="text-sm text-zinc-500 mt-1">
-            Calcula automáticamente la fecha de finalización teniendo en cuenta los fines de semana y los festivos escolares de la Comunidad Valenciana para el curso 25/26.
+            {t('calc.subheader')}
           </p>
         </div>
         
@@ -38,7 +41,7 @@ export const DateCalculator: React.FC = () => {
             <div className="md:col-span-2 space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 mb-1.5 flex items-center gap-1.5">
-                  <CalendarIcon size={16} className="text-zinc-400" /> Fecha de Inicio
+                  <CalendarIcon size={16} className="text-zinc-400" /> {t('calc.startDate')}
                 </label>
                 <input
                   type="date"
@@ -52,7 +55,7 @@ export const DateCalculator: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-zinc-700 mb-1.5 flex items-center gap-1.5">
-                    <Briefcase size={16} className="text-zinc-400" /> Total Horas (FE)
+                    <Briefcase size={16} className="text-zinc-400" /> {t('calc.totalHours')}
                   </label>
                   <input
                     type="number"
@@ -66,7 +69,7 @@ export const DateCalculator: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-zinc-700 mb-1.5 flex items-center gap-1.5">
-                    <Clock size={16} className="text-zinc-400" /> Horas / Día
+                    <Clock size={16} className="text-zinc-400" /> {t('calc.hoursPerDay')}
                   </label>
                   <input
                     type="number"
@@ -84,8 +87,8 @@ export const DateCalculator: React.FC = () => {
               <div className="bg-blue-50 text-blue-800 p-4 rounded-xl flex items-start gap-3 mt-4 text-sm border border-blue-100">
                 <Info size={18} className="mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-semibold mb-1">Sobre el cálculo</p>
-                  <p className="text-blue-700">El sistema asume jornada continua y omite sábados, domingos y el calendario escolar general (incluyendo vacaciones de Navidad, Fallas y Pascua de la C.V.).</p>
+                  <p className="font-semibold mb-1">{t('calc.aboutTitle')}</p>
+                  <p className="text-blue-700">{t('calc.aboutDesc')}</p>
                 </div>
               </div>
             </div>
@@ -96,9 +99,9 @@ export const DateCalculator: React.FC = () => {
                 {result ? (
                   <>
                     <CalendarCheck size={40} className="text-primary-600 mb-3" />
-                    <h4 className="text-sm font-bold text-primary-800 uppercase tracking-wider mb-2">Fecha Estimada de Fin</h4>
+                    <h4 className="text-sm font-bold text-primary-800 uppercase tracking-wider mb-2">{t('calc.estimatedEnd')}</h4>
                     <p className="text-3xl font-black text-zinc-900 mb-2">
-                      {format(parseISO(result.endDate), "d 'de' MMMM", { locale: es })}
+                      {format(parseISO(result.endDate), "d 'de' MMMM", { locale })}
                     </p>
                     <p className="text-sm font-medium text-zinc-500">
                       de {format(parseISO(result.endDate), "yyyy")}
@@ -108,13 +111,13 @@ export const DateCalculator: React.FC = () => {
                     
                     <div className="flex items-center justify-center gap-2 text-zinc-600 font-medium">
                       <Clock size={16} />
-                      {result.workDays} días laborables
+                      {result.workDays} {t('calc.workDaysLabel')}
                     </div>
                   </>
                 ) : (
                   <div className="text-zinc-400">
                     <CalendarIcon size={40} className="mx-auto mb-3 opacity-50" />
-                    <p className="text-sm font-medium">Rellena los datos para ver la fecha de finalización</p>
+                    <p className="text-sm font-medium">{t('calc.fillData')}</p>
                   </div>
                 )}
               </div>
