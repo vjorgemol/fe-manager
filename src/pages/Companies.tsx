@@ -10,7 +10,7 @@ import { Plus, Minus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud
  */
 export const Companies: React.FC = () => {
   const { companies, addCompany, deleteCompany, updateCompany, academicYear } = useData();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   // Estados de la interfaz
   const [isAdding, setIsAdding] = useState(false);
