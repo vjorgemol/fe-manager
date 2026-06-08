@@ -34,7 +34,7 @@ const AccordionItem: React.FC<{ title: string; description: string; icon: React.
 };
 
 export const Settings: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { 
     allStudents, companies, allPlacements, teachers, schoolName, academicYear, 
     reminderDays, setReminderDays, tutorName, setTutorName, tutorEmail, setTutorEmail, 
@@ -285,6 +285,23 @@ export const Settings: React.FC = () => {
         defaultOpen={true}
       >
         <div className="space-y-6">
+          <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-zinc-900">{t('settings.languageTitle')}</h3>
+              <p className="text-zinc-500 text-sm mt-1">{t('settings.languageDesc')}</p>
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as 'es' | 'val')}
+                className="w-full sm:w-48 px-4 py-2.5 bg-white border border-zinc-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-zinc-700 transition-all cursor-pointer"
+              >
+                <option value="es">Castellano</option>
+                <option value="val">Valencià</option>
+              </select>
+            </div>
+          </div>
+
           <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-zinc-900">{t('settings.reminderDaysTitle')}</h3>
