@@ -55,4 +55,5 @@ export interface Placement {
   a3Signed?: boolean;
   trackingCount?: number;
   dailyHours?: number;
+  excludedDates?: string;
 }

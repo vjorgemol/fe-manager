@@ -52,7 +52,8 @@ db.serialize(() => {
     endDate TEXT,
     status TEXT,
     academicYear TEXT,
-    dailyHours INTEGER DEFAULT 4
+    dailyHours INTEGER DEFAULT 4,
+    excludedDates TEXT DEFAULT '[]'
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS teachers (
@@ -103,6 +104,9 @@ db.serialize(() => {
       }
       if (!columns.some(c => c.name === 'dailyHours')) {
         db.run("ALTER TABLE placements ADD COLUMN dailyHours INTEGER DEFAULT 4");
+      }
+      if (!columns.some(c => c.name === 'excludedDates')) {
+        db.run("ALTER TABLE placements ADD COLUMN excludedDates TEXT DEFAULT '[]'");
       }
     }
   });

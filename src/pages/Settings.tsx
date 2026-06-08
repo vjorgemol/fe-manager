@@ -129,6 +129,7 @@ export const Settings: React.FC = () => {
       xml += `      <endEmailSent>${p.endEmailSent ? 'true' : 'false'}</endEmailSent>\n`;
       if (p.teacherId) xml += `      <teacherId>${escapeXml(p.teacherId)}</teacherId>\n`;
       xml += `      <dailyHours>${p.dailyHours !== undefined ? p.dailyHours : 4}</dailyHours>\n`;
+      xml += `      <excludedDates>${escapeXml(p.excludedDates || '[]')}</excludedDates>\n`;
       xml += `    </placement>\n`;
     });
     xml += `  </placements>\n`;
@@ -218,7 +219,8 @@ export const Settings: React.FC = () => {
           startEmailSent: node.getElementsByTagName("startEmailSent")[0]?.textContent === 'true',
           endEmailSent: node.getElementsByTagName("endEmailSent")[0]?.textContent === 'true',
           teacherId: node.getElementsByTagName("teacherId")[0]?.textContent || undefined,
-          dailyHours: node.getElementsByTagName("dailyHours")[0]?.textContent ? Number(node.getElementsByTagName("dailyHours")[0].textContent) : undefined
+          dailyHours: node.getElementsByTagName("dailyHours")[0]?.textContent ? Number(node.getElementsByTagName("dailyHours")[0].textContent) : undefined,
+          excludedDates: node.getElementsByTagName("excludedDates")[0]?.textContent || '[]'
         }));
 
         const teachersList = Array.from(backupRoot.getElementsByTagName("teacher")).map(node => ({
