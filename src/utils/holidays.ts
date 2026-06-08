@@ -38,7 +38,7 @@ export const isWorkableDay = (date: Date): boolean => {
 export const calculateEndDate = (startDateStr: string, totalHours: number, dailyHours: number): { endDate: string, workDays: number } | null => {
   if (!startDateStr || totalHours <= 0 || dailyHours <= 0) return null;
 
-  let currentDate = new Date(startDateStr);
+  const currentDate = new Date(startDateStr);
   let accumulatedHours = 0;
   let workDays = 0;
 

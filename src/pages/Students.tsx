@@ -24,6 +24,16 @@ export const Students: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
 
+  /**
+   * Resetea el formulario y limpia estados de edición.
+   */
+  const resetForm = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
+  };
+
   // Estados para la lógica de importación/exportación
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<{ students: any[], skipped: number } | null>(null);
@@ -53,6 +63,7 @@ export const Students: React.FC = () => {
     if (editId) {
       const student = students.find(s => s.id === editId);
       if (student) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({
           firstName: student.firstName,
           lastName: student.lastName,
@@ -285,15 +296,7 @@ export const Students: React.FC = () => {
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  /**
-   * Resetea el formulario y limpia estados de edición.
-   */
-  const resetForm = () => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('edit');
-    params.delete('new');
-    setSearchParams(params);
-  };
+
 
   // Filtrado y ordenación de la lista mostrada en tiempo real
   const filtered = students.filter(s =>

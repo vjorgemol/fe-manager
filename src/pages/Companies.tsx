@@ -35,6 +35,13 @@ export const Companies: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
 
+  const resetForm = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
+  };
+
   // Estados para la importación CSV
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<{ companies: any[], skipped: number } | null>(null);
@@ -66,6 +73,7 @@ export const Companies: React.FC = () => {
         else if (company.rejectedYears?.includes(academicYear)) status = 'rejected';
         else if (company.prospectingYears?.includes(academicYear)) status = 'prospecting';
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({ 
           name: company.name, 
           email: company.email, 
@@ -274,12 +282,7 @@ export const Companies: React.FC = () => {
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const resetForm = () => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('edit');
-    params.delete('new');
-    setSearchParams(params);
-  };
+
 
   /**
    * Exporta el listado de empresas a CSV.

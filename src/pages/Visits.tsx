@@ -51,10 +51,10 @@ export const Visits: React.FC = () => {
     const originParam = originAddress ? `&origin=${encodeURIComponent(originAddress)}` : '';
     
     // Si hay origen, el destino es la última visita. Si no hay origen, el origen es la primera visita y el destino la última.
-    let destIndex = selectedVisits.length - 1;
+    const destIndex = selectedVisits.length - 1;
     let originStr = originParam;
     
-    let waypointsList = [];
+    const waypointsList = [];
     
     if (!originAddress) {
       const firstC = getCompanyInfo(selectedVisits[0].companyId);

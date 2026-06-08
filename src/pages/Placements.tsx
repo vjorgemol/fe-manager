@@ -16,12 +16,33 @@ export const Placements: React.FC = () => {
   const [remindA3PlacementId, setRemindA3PlacementId] = useState<string | null>(null);
   const [parsingAlert, setParsingAlert] = useState<{show: boolean, message: string} | null>(null);
   const [parsingConfirm, setParsingConfirm] = useState<{show: boolean, instructorName: string, instructorDni: string, instructorEmail: string, company: any} | null>(null);
-  
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
-  
   const [companySearch, setCompanySearch] = useState('');
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+
+  const resetForm = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
+  };
+  const [formData, setFormData] = useState({
+    studentId: '',
+    companyId: '',
+    hours: 380,
+    startDate: '',
+    endDate: '',
+    status: 'pending' as PlacementStatus,
+    teacherId: '',
+    anexoA1: '' as string | undefined,
+    anexoA2: '' as string | undefined,
+    anexoA3: '' as string | undefined,
+    allSigned: false,
+    dailyHours: 4,
+    excludedDates: [] as string[],
+    weeklySchedule: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 0 } as Record<number, number>
+  });
   
   // CSV Import States
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
@@ -167,6 +188,7 @@ export const Placements: React.FC = () => {
           if (weeklySchedule[6] === undefined) weeklySchedule[6] = 0;
         }
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({
           studentId: placement.studentId,
           companyId: placement.companyId,
@@ -237,23 +259,6 @@ export const Placements: React.FC = () => {
       window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
     }
   }, [searchParams, placements, students, editingId, isAdding]);
-  
-  const [formData, setFormData] = useState({
-    studentId: '',
-    companyId: '',
-    hours: 380,
-    startDate: '',
-    endDate: '',
-    status: 'pending' as PlacementStatus,
-    teacherId: '',
-    anexoA1: '' as string | undefined,
-    anexoA2: '' as string | undefined,
-    anexoA3: '' as string | undefined,
-    allSigned: false,
-    dailyHours: 4,
-    excludedDates: [] as string[],
-    weeklySchedule: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 0 } as Record<number, number>
-  });
 
   React.useEffect(() => {
     if (formData.startDate && formData.endDate) {
@@ -263,6 +268,7 @@ export const Placements: React.FC = () => {
         formData.weeklySchedule, formData.dailyHours
       );
       if (calculatedHours > 0 && calculatedHours !== formData.hours) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData(prev => ({ ...prev, hours: calculatedHours }));
       }
     }
@@ -321,12 +327,7 @@ export const Placements: React.FC = () => {
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const resetForm = () => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('edit');
-    params.delete('new');
-    setSearchParams(params);
-  };
+
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -468,7 +469,7 @@ export const Placements: React.FC = () => {
           const hours = hoursIdx !== -1 && values[hoursIdx] ? parseInt(values[hoursIdx]) : 380;
           const startDate = startIdx !== -1 && values[startIdx] ? values[startIdx] : '';
           const endDate = endIdx !== -1 && values[endIdx] ? values[endIdx] : '';
-          let statusStr = statusIdx !== -1 && values[statusIdx] ? values[statusIdx].toLowerCase() : 'pending';
+          const statusStr = statusIdx !== -1 && values[statusIdx] ? values[statusIdx].toLowerCase() : 'pending';
           
           let status: PlacementStatus = 'pending';
           if (statusStr.includes('activa') || statusStr.includes('curso') || statusStr.includes('en curs')) status = 'active';
