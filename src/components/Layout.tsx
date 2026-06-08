@@ -3,6 +3,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X, LogOut, Wrench } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
+import { Breadcrumbs } from './Breadcrumbs';
 
 export const Layout: React.FC = () => {
   const { schoolName, setSchoolName, academicYear, setAcademicYear } = useData();
@@ -128,6 +129,7 @@ export const Layout: React.FC = () => {
 
         <div id="main-scroll-container" className="flex-1 overflow-auto p-4 lg:p-8 print:p-0 print:overflow-visible print:block">
           <div className="max-w-6xl mx-auto print:max-w-none print:mx-0">
+            <Breadcrumbs />
             <Outlet />
           </div>
         </div>

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Search, Edit, Mail, X, UploadCloud, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { Plus, Minus, Trash2, Search, Edit, Mail, X, UploadCloud, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import type { Student } from '../types';
 
 /**
@@ -19,7 +19,7 @@ export const Students: React.FC = () => {
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
 
   // Estados para la lógica de importación/exportación
@@ -29,6 +29,54 @@ export const Students: React.FC = () => {
 
   // Referencia al input de archivo oculto
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleReset = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.path === '/students') {
+        resetForm();
+      }
+    };
+    window.addEventListener('breadcrumb-click', handleReset);
+    return () => {
+      window.removeEventListener('breadcrumb-click', handleReset);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    };
+  }, [searchParams]);
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    const isNew = searchParams.get('new') === 'true';
+
+    if (editId) {
+      const student = students.find(s => s.id === editId);
+      if (student) {
+        setFormData({
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+          phone: student.phone || '',
+          photoBase64: student.photoBase64 || '',
+          notes: student.notes || ''
+        });
+        setEditingId(editId);
+        setIsAdding(true);
+        window.dispatchEvent(new CustomEvent('editing-element', { 
+          detail: { name: `Editar: ${student.firstName} ${student.lastName}` } 
+        }));
+      }
+    } else if (isNew) {
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
+      setEditingId(null);
+      setIsAdding(true);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: 'Nuevo Alumno' } }));
+    } else {
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
+      setEditingId(null);
+      setIsAdding(false);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    }
+  }, [searchParams, students]);
 
   /**
    * Procesa la lectura del archivo CSV seleccionado por el usuario.
@@ -227,9 +275,10 @@ export const Students: React.FC = () => {
    * Prepara el formulario para editar un alumno existente.
    */
   const handleEdit = (student: any) => {
-    setFormData({ firstName: student.firstName, lastName: student.lastName, email: student.email, phone: student.phone || '', photoBase64: student.photoBase64 || '', notes: student.notes || '' });
-    setEditingId(student.id);
-    setIsAdding(true);
+    const params = new URLSearchParams(searchParams);
+    params.set('edit', student.id);
+    params.delete('new');
+    setSearchParams(params);
     // Scroll suave hacia arriba para ver el formulario
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -238,9 +287,10 @@ export const Students: React.FC = () => {
    * Resetea el formulario y limpia estados de edición.
    */
   const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
-    setEditingId(null);
-    setIsAdding(false);
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
   };
 
   // Filtrado y ordenación de la lista mostrada en tiempo real
@@ -280,13 +330,24 @@ export const Students: React.FC = () => {
             onClick={() => {
               if (isAdding) resetForm();
               else {
-                setIsAdding(true);
+                const params = new URLSearchParams(searchParams);
+                params.set('new', 'true');
+                params.delete('edit');
+                setSearchParams(params);
                 document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm shadow-primary-500/20"
+            className={`p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm ${
+              isAdding 
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20' 
+                : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/20'
+            }`}
           >
-            <Plus size={20} className="sm:mr-2" />
+            {isAdding ? (
+              <Minus size={20} className="sm:mr-2" />
+            ) : (
+              <Plus size={20} className="sm:mr-2" />
+            )}
             <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Añadir Alumno'}</span>
           </button>
         </div>
@@ -362,10 +423,30 @@ export const Students: React.FC = () => {
                 <tr><td colSpan={3} className="px-6 py-8 text-center text-zinc-500">No se encontraron alumnos.</td></tr>
               ) : (
                 filtered.map(s => (
-                  <tr key={s.id} className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" onDoubleClick={() => setViewingStudent(s as Student)}>
+                  <tr 
+                    key={s.id} 
+                    className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" 
+                    onClick={() => handleEdit(s)}
+                    onDoubleClick={(e) => { e.stopPropagation(); setViewingStudent(s as Student); }}
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {s.photoBase64 ? <img src={s.photoBase64} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-200 shadow-sm" /> : <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs uppercase shadow-sm">{s.firstName.charAt(0)}{s.lastName.charAt(0)}</div>}
+                        <div 
+                          className="cursor-pointer transition-transform hover:scale-105 shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingStudent(s as Student);
+                          }}
+                          title="Ver detalles del alumno"
+                        >
+                          {s.photoBase64 ? (
+                            <img src={s.photoBase64} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-200 shadow-sm" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
+                              {s.firstName.charAt(0)}{s.lastName.charAt(0)}
+                            </div>
+                          )}
+                        </div>
                         <div className="font-medium text-zinc-900">{s.lastName}, {s.firstName}</div>
                       </div>
                     </td>
@@ -389,9 +470,29 @@ export const Students: React.FC = () => {
             <div className="px-6 py-8 text-center text-zinc-500">No se encontraron alumnos.</div>
           ) : (
             filtered.map(s => (
-              <div key={s.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors" onClick={() => setViewingStudent(s as Student)}>
+              <div 
+                key={s.id} 
+                className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors cursor-pointer" 
+                onClick={() => handleEdit(s)}
+                onDoubleClick={(e) => { e.stopPropagation(); setViewingStudent(s as Student); }}
+              >
                 <div className="flex items-center gap-3">
-                  {s.photoBase64 ? <img src={s.photoBase64} alt="" className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm" /> : <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm uppercase shadow-sm">{s.firstName.charAt(0)}{s.lastName.charAt(0)}</div>}
+                  <div 
+                    className="cursor-pointer transition-transform hover:scale-105 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setViewingStudent(s as Student);
+                    }}
+                    title="Ver detalles del alumno"
+                  >
+                    {s.photoBase64 ? (
+                      <img src={s.photoBase64} alt="" className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                        {s.firstName.charAt(0)}{s.lastName.charAt(0)}
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <div className="font-bold text-zinc-900 leading-tight">{s.lastName}, {s.firstName}</div>
                     <div className="text-xs text-zinc-500 mt-0.5">{s.email}</div>

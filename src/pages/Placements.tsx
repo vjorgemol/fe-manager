@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud, Info, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud, Info, AlertTriangle } from 'lucide-react';
 import type { PlacementStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -15,7 +15,7 @@ export const Placements: React.FC = () => {
   const [parsingAlert, setParsingAlert] = useState<{show: boolean, message: string} | null>(null);
   const [parsingConfirm, setParsingConfirm] = useState<{show: boolean, instructorName: string, instructorDni: string, instructorEmail: string, company: any} | null>(null);
   
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
   
   const [companySearch, setCompanySearch] = useState('');
@@ -25,6 +25,87 @@ export const Placements: React.FC = () => {
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<{ placements: any[], skipped: number } | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleReset = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.path === '/placements') {
+        resetForm();
+      }
+    };
+    window.addEventListener('breadcrumb-click', handleReset);
+    return () => {
+      window.removeEventListener('breadcrumb-click', handleReset);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    };
+  }, [searchParams]);
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    const isNew = searchParams.get('new') === 'true';
+
+    if (editId) {
+      const placement = placements.find(p => p.id === editId);
+      if (placement) {
+        setFormData({
+          studentId: placement.studentId,
+          companyId: placement.companyId,
+          hours: placement.hours,
+          startDate: placement.startDate,
+          endDate: placement.endDate,
+          status: placement.status,
+          teacherId: placement.teacherId || '',
+          anexoA1: placement.anexoA1 || '',
+          anexoA2: placement.anexoA2 || '',
+          anexoA3: placement.anexoA3 || '',
+          allSigned: !!placement.allSigned
+        });
+        setCompanySearch('');
+        setEditingId(editId);
+        setIsAdding(true);
+        const student = students.find(s => s.id === placement.studentId);
+        window.dispatchEvent(new CustomEvent('editing-element', { 
+          detail: { name: `Editar: ${student ? `${student.firstName} ${student.lastName}` : 'Asignación'}` } 
+        }));
+      }
+    } else if (isNew) {
+      setFormData({
+        studentId: '',
+        companyId: '',
+        hours: 380,
+        startDate: '',
+        endDate: '',
+        status: 'pending' as PlacementStatus,
+        teacherId: '',
+        anexoA1: '',
+        anexoA2: '',
+        anexoA3: '',
+        allSigned: false
+      });
+      setCompanySearch('');
+      setEditingId(null);
+      setIsAdding(true);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: 'Nueva Asignación' } }));
+    } else {
+      setFormData({
+        studentId: '',
+        companyId: '',
+        hours: 380,
+        startDate: '',
+        endDate: '',
+        status: 'pending' as PlacementStatus,
+        teacherId: '',
+        anexoA1: '',
+        anexoA2: '',
+        anexoA3: '',
+        allSigned: false
+      });
+      setCompanySearch('');
+      setEditingId(null);
+      setIsAdding(false);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    }
+  }, [searchParams, placements, students]);
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -76,42 +157,18 @@ export const Placements: React.FC = () => {
   };
 
   const handleEdit = (placement: any) => {
-    setFormData({
-      studentId: placement.studentId,
-      companyId: placement.companyId,
-      hours: placement.hours,
-      startDate: placement.startDate,
-      endDate: placement.endDate,
-      status: placement.status,
-      teacherId: placement.teacherId || '',
-      anexoA1: placement.anexoA1 || '',
-      anexoA2: placement.anexoA2 || '',
-      anexoA3: placement.anexoA3 || '',
-      allSigned: !!placement.allSigned
-    });
-    setCompanySearch('');
-    setEditingId(placement.id);
-    setIsAdding(true);
+    const params = new URLSearchParams(searchParams);
+    params.set('edit', placement.id);
+    params.delete('new');
+    setSearchParams(params);
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const resetForm = () => {
-    setFormData({
-      studentId: '',
-      companyId: '',
-      hours: 380,
-      startDate: '',
-      endDate: '',
-      status: 'pending' as PlacementStatus,
-      teacherId: '',
-      anexoA1: '',
-      anexoA2: '',
-      anexoA3: '',
-      allSigned: false
-    });
-    setCompanySearch('');
-    setEditingId(null);
-    setIsAdding(false);
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -402,15 +459,26 @@ export const Placements: React.FC = () => {
               if (isAdding) {
                 resetForm();
               } else {
-                setIsAdding(true);
+                const params = new URLSearchParams(searchParams);
+                params.set('new', 'true');
+                params.delete('edit');
+                setSearchParams(params);
                 document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
             disabled={students.length === 0 || companies.length === 0}
-            className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm shadow-primary-500/20"
+            className={`disabled:opacity-50 disabled:cursor-not-allowed text-white p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm ${
+              isAdding 
+                ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' 
+                : 'bg-primary-600 hover:bg-primary-700 shadow-primary-500/20'
+            }`}
             title={isAdding ? 'Cancelar' : 'Nueva Asignación'}
           >
-            <Plus size={20} className="sm:mr-2" />
+            {isAdding ? (
+              <Minus size={20} className="sm:mr-2" />
+            ) : (
+              <Plus size={20} className="sm:mr-2" />
+            )}
             <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Nueva Asignación'}</span>
           </button>
         </div>
@@ -633,12 +701,16 @@ export const Placements: React.FC = () => {
             if (!student || !company) return null;
 
             return (
-              <div key={p.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6 group hover:shadow-md transition-all relative">
-                <div className="md:static flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity md:order-last">
-                  <button onClick={() => handleEdit(p)} className="p-2 text-zinc-400 hover:text-primary-500 transition-colors">
+              <div 
+                key={p.id} 
+                className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6 group hover:shadow-md transition-all relative cursor-pointer"
+                onClick={() => handleEdit(p)}
+              >
+                <div className="md:static flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity md:order-last" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={(e) => { e.stopPropagation(); handleEdit(p); }} className="p-2 text-zinc-400 hover:text-primary-500 transition-colors">
                     <Edit size={18} />
                   </button>
-                  <button onClick={() => setDeletingId(p.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); setDeletingId(p.id); }} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -673,7 +745,7 @@ export const Placements: React.FC = () => {
                   </div>
                   
                   {/* Documentation Status */}
-                  <div className="w-full lg:w-48 flex flex-col gap-2 bg-zinc-50/50 p-3 rounded-xl border border-zinc-100">
+                  <div className="w-full lg:w-48 flex flex-col gap-2 bg-zinc-50/50 p-3 rounded-xl border border-zinc-100" onClick={(e) => e.stopPropagation()}>
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-1">Documentación</span>
                     <div className="flex flex-wrap gap-2">
                       {[
@@ -694,7 +766,8 @@ export const Placements: React.FC = () => {
                             </a>
                           ) : (
                             <button 
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (anexo.label === 'A3') setRemindA3PlacementId(p.id);
                               }}
                               disabled={anexo.label !== 'A3'}
@@ -716,7 +789,7 @@ export const Placements: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto bg-zinc-50 p-4 rounded-xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto bg-zinc-50 p-4 rounded-xl" onClick={(e) => e.stopPropagation()}>
                   <div className="space-y-1">
                     <div className="flex items-center text-sm font-medium text-zinc-700">
                       <Clock size={16} className="mr-2 text-zinc-400" />

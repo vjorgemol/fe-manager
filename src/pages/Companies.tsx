@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 /**
  * Componente para la gestión del directorio de empresas.
@@ -30,13 +30,71 @@ export const Companies: React.FC = () => {
     instructorEmail: ''
   });
   
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
 
   // Estados para la importación CSV
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<{ companies: any[], skipped: number } | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleReset = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.path === '/companies') {
+        resetForm();
+      }
+    };
+    window.addEventListener('breadcrumb-click', handleReset);
+    return () => {
+      window.removeEventListener('breadcrumb-click', handleReset);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    };
+  }, [searchParams]);
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    const isNew = searchParams.get('new') === 'true';
+
+    if (editId) {
+      const company = companies.find(c => c.id === editId);
+      if (company) {
+        let status: 'none' | 'prospecting' | 'accepted' | 'rejected' = 'none';
+        if (company.acceptedYears?.includes(academicYear)) status = 'accepted';
+        else if (company.rejectedYears?.includes(academicYear)) status = 'rejected';
+        else if (company.prospectingYears?.includes(academicYear)) status = 'prospecting';
+
+        setFormData({ 
+          name: company.name, 
+          email: company.email, 
+          location: company.location, 
+          address: company.address || '', 
+          contactPerson: company.contactPerson || '', 
+          collaborationStatus: status, 
+          inactiveEmail: !!company.inactiveEmail,
+          phone: company.phone || '',
+          instructorName: company.instructorName || '',
+          instructorDni: company.instructorDni || '',
+          instructorEmail: company.instructorEmail || ''
+        });
+        setEditingId(editId);
+        setIsAdding(true);
+        window.dispatchEvent(new CustomEvent('editing-element', { 
+          detail: { name: `Editar: ${company.name}` } 
+        }));
+      }
+    } else if (isNew) {
+      setFormData({ name: '', email: '', location: '', address: '', contactPerson: '', collaborationStatus: 'none', inactiveEmail: false, phone: '', instructorName: '', instructorDni: '', instructorEmail: '' });
+      setEditingId(null);
+      setIsAdding(true);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: 'Nueva Empresa' } }));
+    } else {
+      setFormData({ name: '', email: '', location: '', address: '', contactPerson: '', collaborationStatus: 'none', inactiveEmail: false, phone: '', instructorName: '', instructorDni: '', instructorEmail: '' });
+      setEditingId(null);
+      setIsAdding(false);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    }
+  }, [searchParams, companies]);
 
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -207,33 +265,18 @@ export const Companies: React.FC = () => {
    * Determina el estado de colaboración buscando el curso académico actual en las listas.
    */
   const handleEdit = (company: any) => {
-    let status: 'none' | 'prospecting' | 'accepted' | 'rejected' = 'none';
-    if (company.acceptedYears?.includes(academicYear)) status = 'accepted';
-    else if (company.rejectedYears?.includes(academicYear)) status = 'rejected';
-    else if (company.prospectingYears?.includes(academicYear)) status = 'prospecting';
-
-    setFormData({ 
-      name: company.name, 
-      email: company.email, 
-      location: company.location, 
-      address: company.address || '', 
-      contactPerson: company.contactPerson || '', 
-      collaborationStatus: status, 
-      inactiveEmail: !!company.inactiveEmail,
-      phone: company.phone || '',
-      instructorName: company.instructorName || '',
-      instructorDni: company.instructorDni || '',
-      instructorEmail: company.instructorEmail || ''
-    });
-    setEditingId(company.id);
-    setIsAdding(true);
+    const params = new URLSearchParams(searchParams);
+    params.set('edit', company.id);
+    params.delete('new');
+    setSearchParams(params);
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', location: '', address: '', contactPerson: '', collaborationStatus: 'none', inactiveEmail: false, phone: '', instructorName: '', instructorDni: '', instructorEmail: '' });
-    setEditingId(null);
-    setIsAdding(false);
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
   };
 
   /**
@@ -308,13 +351,24 @@ export const Companies: React.FC = () => {
             onClick={() => {
               if (isAdding) resetForm();
               else {
-                setIsAdding(true);
+                const params = new URLSearchParams(searchParams);
+                params.set('new', 'true');
+                params.delete('edit');
+                setSearchParams(params);
                 document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm shadow-primary-500/20"
+            className={`p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm ${
+              isAdding 
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20' 
+                : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/20'
+            }`}
           >
-            <Plus size={20} className="sm:mr-2" />
+            {isAdding ? (
+              <Minus size={20} className="sm:mr-2" />
+            ) : (
+              <Plus size={20} className="sm:mr-2" />
+            )}
             <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Añadir Empresa'}</span>
           </button>
         </div>
@@ -425,7 +479,11 @@ export const Companies: React.FC = () => {
           </div>
         ) : (
           filtered.map(c => (
-            <div key={c.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 group hover:shadow-md transition-all relative">
+            <div 
+              key={c.id} 
+              className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 group hover:shadow-md transition-all relative cursor-pointer"
+              onClick={() => handleEdit(c)}
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-primary-50 text-primary-600 rounded-xl flex items-center justify-center font-bold text-xl uppercase">
@@ -446,8 +504,8 @@ export const Companies: React.FC = () => {
                   )}
                 </div>
                 <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEdit(c)} className="text-zinc-400 hover:text-primary-500 transition-colors"><Edit size={18} /></button>
-                  <button onClick={() => setDeletingId(c.id)} className="text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); handleEdit(c); }} className="text-zinc-400 hover:text-primary-500 transition-colors"><Edit size={18} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); setDeletingId(c.id); }} className="text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                 </div>
               </div>
               <h3 className="text-lg font-bold text-zinc-900 mb-1">{c.name}</h3>
@@ -457,13 +515,19 @@ export const Companies: React.FC = () => {
                 {c.phone && (
                   <p className="text-sm text-zinc-500 flex items-center gap-1.5">
                     <Phone size={14} className="text-zinc-400" />
-                    <a href={`tel:${c.phone}`} className="text-primary-600 hover:underline font-medium">{c.phone}</a>
+                    <a 
+                      href={`tel:${c.phone}`} 
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-primary-600 hover:underline font-medium"
+                    >
+                      {c.phone}
+                    </a>
                   </p>
                 )}
               </div>
               
               {(c.instructorName || c.instructorEmail) && (
-                <div className="mb-4 bg-zinc-50 border border-zinc-100 rounded-xl p-3">
+                <div className="mb-4 bg-zinc-50 border border-zinc-100 rounded-xl p-3" onClick={(e) => e.stopPropagation()}>
                   <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Instructor/a Asignado</div>
                   <div className="text-sm font-medium text-zinc-800">{c.instructorName || 'Nombre no disponible'} {c.instructorDni ? `(${c.instructorDni})` : ''}</div>
                   <div className="text-sm text-zinc-500">{c.instructorEmail || 'Email no disponible'}</div>
@@ -480,6 +544,7 @@ export const Companies: React.FC = () => {
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name} ${c.address ? `${c.address}, ${c.location}` : c.location}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline flex items-center ml-1"
                   >
                     Ver en Google Maps
