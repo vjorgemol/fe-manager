@@ -716,36 +716,39 @@ export const Placements: React.FC = () => {
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
             </div>
 
-            {/* Per-day hours: one field per weekday */}
-            {(
-              [
-                { day: 1, label: 'Lunes', short: 'L' },
-                { day: 2, label: 'Martes', short: 'M' },
-                { day: 3, label: 'Miércoles', short: 'X' },
-                { day: 4, label: 'Jueves', short: 'J' },
-                { day: 5, label: 'Viernes', short: 'V' },
-              ] as { day: number; label: string; short: string }[]
-            ).map(({ day, label }) => (
-              <div key={day}>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">{label} (horas)</label>
-                <div className="relative">
-                  <input
-                    type="number" min="0" max="24" step="0.5"
-                    className="w-full px-4 pr-8 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-semibold text-zinc-800"
-                    value={formData.weeklySchedule[day] ?? formData.dailyHours}
-                    title={label}
-                    onChange={e => {
-                      const val = Number(e.target.value);
-                      setFormData(prev => ({
-                        ...prev,
-                        weeklySchedule: { ...prev.weeklySchedule, [day]: val }
-                      }));
-                    }}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-bold pointer-events-none">h</span>
-                </div>
+            {/* Weekly schedule widget */}
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Horas por día de la semana</label>
+              <div className="grid grid-cols-5 gap-3">
+                {([ 
+                  { day: 1, label: 'Lunes' },
+                  { day: 2, label: 'Martes' },
+                  { day: 3, label: 'Miércoles' },
+                  { day: 4, label: 'Jueves' },
+                  { day: 5, label: 'Viernes' },
+                ] as { day: number; label: string }[]).map(({ day, label }) => (
+                  <div key={day} className="flex flex-col items-center gap-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">{label.slice(0, 2)}</span>
+                    <div className="relative w-full">
+                      <input
+                        type="number" min="0" max="24" step="0.5"
+                        className="w-full px-2 py-2.5 text-center bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-bold text-zinc-800 shadow-sm"
+                        value={formData.weeklySchedule[day] ?? formData.dailyHours}
+                        title={label}
+                        onChange={e => {
+                          const val = Number(e.target.value);
+                          setFormData(prev => ({
+                            ...prev,
+                            weeklySchedule: { ...prev.weeklySchedule, [day]: val }
+                          }));
+                        }}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Horas Totales</label>
