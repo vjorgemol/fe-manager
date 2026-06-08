@@ -300,8 +300,13 @@ export const Placements: React.FC = () => {
       alert("Por favor, busca y selecciona una empresa de la lista.");
       return;
     }
+    const scheduleValues = Object.values(formData.weeklySchedule);
+    const avgDailyHours = scheduleValues.length > 0
+      ? Math.round((scheduleValues.reduce((a, b) => a + b, 0) / scheduleValues.length) * 10) / 10
+      : formData.dailyHours;
     const submissionData = {
       ...formData,
+      dailyHours: avgDailyHours,
       excludedDates: JSON.stringify(formData.excludedDates),
       weeklySchedule: JSON.stringify(formData.weeklySchedule)
     };
@@ -710,50 +715,38 @@ export const Placements: React.FC = () => {
               <label className="block text-sm font-medium text-zinc-700 mb-1">Fecha de Fin</label>
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Duración diaria (horas)</label>
-              <input
-                type="number" min="0.5" max="24" step="0.5"
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                value={formData.dailyHours}
-                onChange={e => {
-                  const val = Number(e.target.value);
-                  setFormData(prev => ({
-                    ...prev,
-                    dailyHours: val,
-                    weeklySchedule: { 1: val, 2: val, 3: val, 4: val, 5: val }
-                  }));
-                }}
-              />
-            </div>
 
-            {/* Weekly schedule widget */}
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="block text-sm font-medium text-zinc-700 mb-2">Horario semanal (horas por día)</label>
-              <div className="grid grid-cols-5 gap-3">
-                {([{ day: 1, label: 'Lunes' }, { day: 2, label: 'Martes' }, { day: 3, label: 'Miércoles' }, { day: 4, label: 'Jueves' }, { day: 5, label: 'Viernes' }] as { day: number; label: string }[]).map(({ day, label }) => (
-                  <div key={day} className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{label.slice(0, 2)}</span>
-                    <div className="relative w-full">
-                      <input
-                        type="number" min="0" max="24" step="0.5"
-                        className="w-full px-2 py-2 text-center bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-semibold text-zinc-800"
-                        value={formData.weeklySchedule[day] ?? formData.dailyHours}
-                        title={label}
-                        onChange={e => {
-                          const val = Number(e.target.value);
-                          setFormData(prev => ({
-                            ...prev,
-                            weeklySchedule: { ...prev.weeklySchedule, [day]: val }
-                          }));
-                        }}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
-                    </div>
-                  </div>
-                ))}
+            {/* Per-day hours: one field per weekday */}
+            {(
+              [
+                { day: 1, label: 'Lunes', short: 'L' },
+                { day: 2, label: 'Martes', short: 'M' },
+                { day: 3, label: 'Miércoles', short: 'X' },
+                { day: 4, label: 'Jueves', short: 'J' },
+                { day: 5, label: 'Viernes', short: 'V' },
+              ] as { day: number; label: string; short: string }[]
+            ).map(({ day, label }) => (
+              <div key={day}>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">{label} (horas)</label>
+                <div className="relative">
+                  <input
+                    type="number" min="0" max="24" step="0.5"
+                    className="w-full px-4 pr-8 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-semibold text-zinc-800"
+                    value={formData.weeklySchedule[day] ?? formData.dailyHours}
+                    title={label}
+                    onChange={e => {
+                      const val = Number(e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        weeklySchedule: { ...prev.weeklySchedule, [day]: val }
+                      }));
+                    }}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-bold pointer-events-none">h</span>
+                </div>
               </div>
-            </div>
+            ))}
+
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Horas Totales</label>
               <input required type="number" min="1" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.hours} onChange={e => setFormData({...formData, hours: Number(e.target.value)})} />
