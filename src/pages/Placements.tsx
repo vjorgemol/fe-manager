@@ -31,28 +31,24 @@ export const Placements: React.FC = () => {
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
-  const getWorkingDaysCount = (startStr: string, endStr: string, excluded: string[] = []): number => {
+  const getWorkingDaysCount = (startStr: string, endStr: string, schedule: Record<number, number>, fallback: number, excluded: string[] = []): number => {
     if (!startStr || !endStr) return 0;
     try {
       const start = parseLocalDate(startStr);
       const end = parseLocalDate(endStr);
       if (start > end) return 0;
-      
       let count = 0;
       const current = new Date(start);
       while (current <= end) {
-        if (current.getDay() !== 0 && current.getDay() !== 6) {
+        const dayHours = schedule[current.getDay()] ?? fallback;
+        if (dayHours > 0) {
           const dateStr = format(current, 'yyyy-MM-dd');
-          if (!excluded.includes(dateStr)) {
-            count++;
-          }
+          if (!excluded.includes(dateStr)) count++;
         }
         current.setDate(current.getDate() + 1);
       }
       return count;
-    } catch (e) {
-      return 0;
-    }
+    } catch (e) { return 0; }
   };
 
   // Returns hours for a specific date based on weekday schedule, fallback to dailyHours
@@ -61,11 +57,10 @@ export const Placements: React.FC = () => {
     return h !== undefined ? h : fallback;
   };
 
-  // Total hours summing per-day schedule over all working (non-excluded) days in range
+  // Total hours: sum of all days where schedule > 0, IGNORING excluded dates (total is fixed)
   const getTotalHoursWithSchedule = (
     startStr: string, endStr: string,
-    schedule: Record<number, number>, fallback: number,
-    excluded: string[] = []
+    schedule: Record<number, number>, fallback: number
   ): number => {
     if (!startStr || !endStr) return 0;
     try {
@@ -75,20 +70,15 @@ export const Placements: React.FC = () => {
       let total = 0;
       const current = new Date(start);
       while (current <= end) {
-        const day = current.getDay();
-        if (day !== 0 && day !== 6) {
-          const dateStr = format(current, 'yyyy-MM-dd');
-          if (!excluded.includes(dateStr)) {
-            total += getDayHours(current, schedule, fallback);
-          }
-        }
+        const h = getDayHours(current, schedule, fallback);
+        if (h > 0) total += h;
         current.setDate(current.getDate() + 1);
       }
       return Math.round(total * 10) / 10;
     } catch (e) { return 0; }
   };
 
-  // Completed hours: same but limited to today
+  // Completed hours: only past days with schedule > 0, minus excluded (absent) dates
   const getCompletedHoursWithSchedule = (
     startStr: string, endStr: string,
     schedule: Record<number, number>, fallback: number,
@@ -106,12 +96,10 @@ export const Placements: React.FC = () => {
       let total = 0;
       const current = new Date(start);
       while (current <= limit) {
-        const day = current.getDay();
-        if (day !== 0 && day !== 6) {
+        const h = getDayHours(current, schedule, fallback);
+        if (h > 0) {
           const dateStr = format(current, 'yyyy-MM-dd');
-          if (!excluded.includes(dateStr)) {
-            total += getDayHours(current, schedule, fallback);
-          }
+          if (!excluded.includes(dateStr)) total += h;
         }
         current.setDate(current.getDate() + 1);
       }
@@ -170,7 +158,11 @@ export const Placements: React.FC = () => {
         // If weeklySchedule was empty (legacy data), populate from dailyHours
         const hasSchedule = placement.weeklySchedule && placement.weeklySchedule !== '{}';
         if (!hasSchedule) {
-          weeklySchedule = { 1: currentDailyHours, 2: currentDailyHours, 3: currentDailyHours, 4: currentDailyHours, 5: currentDailyHours };
+          weeklySchedule = { 0: 0, 1: currentDailyHours, 2: currentDailyHours, 3: currentDailyHours, 4: currentDailyHours, 5: currentDailyHours, 6: 0 };
+        } else {
+          // Ensure 0 and 6 exist (backward compat with old data missing sat/sun)
+          if (weeklySchedule[0] === undefined) weeklySchedule[0] = 0;
+          if (weeklySchedule[6] === undefined) weeklySchedule[6] = 0;
         }
 
         setFormData({
@@ -213,7 +205,7 @@ export const Placements: React.FC = () => {
         allSigned: false,
         dailyHours: 4,
         excludedDates: [],
-        weeklySchedule: { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 }
+        weeklySchedule: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 0 }
       });
       setCompanySearch('');
       setEditingId(null);
@@ -258,21 +250,21 @@ export const Placements: React.FC = () => {
     allSigned: false,
     dailyHours: 4,
     excludedDates: [] as string[],
-    weeklySchedule: { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 } as Record<number, number>
+    weeklySchedule: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 0 } as Record<number, number>
   });
 
   React.useEffect(() => {
     if (formData.startDate && formData.endDate) {
+      // Total is calculated WITHOUT excluded dates so clicking never changes it
       const calculatedHours = getTotalHoursWithSchedule(
         formData.startDate, formData.endDate,
-        formData.weeklySchedule, formData.dailyHours,
-        formData.excludedDates
+        formData.weeklySchedule, formData.dailyHours
       );
       if (calculatedHours > 0 && calculatedHours !== formData.hours) {
         setFormData(prev => ({ ...prev, hours: calculatedHours }));
       }
     }
-  }, [formData.startDate, formData.endDate, formData.dailyHours, formData.excludedDates, formData.weeklySchedule]);
+  }, [formData.startDate, formData.endDate, formData.dailyHours, formData.weeklySchedule]);
 
   const sortedPlacements = [...placements].sort((a, b) => {
     const studentA = students.find(s => s.id === a.studentId);
@@ -716,37 +708,49 @@ export const Placements: React.FC = () => {
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
             </div>
 
-            {/* Weekly schedule widget */}
+            {/* Weekly schedule widget: L M X J V S D */}
             <div className="md:col-span-2 lg:col-span-3">
               <label className="block text-sm font-medium text-zinc-700 mb-2">Horas por día de la semana</label>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-7 gap-2">
                 {([ 
                   { day: 1, label: 'Lunes' },
                   { day: 2, label: 'Martes' },
                   { day: 3, label: 'Miércoles' },
                   { day: 4, label: 'Jueves' },
                   { day: 5, label: 'Viernes' },
-                ] as { day: number; label: string }[]).map(({ day, label }) => (
-                  <div key={day} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">{label.slice(0, 2)}</span>
-                    <div className="relative w-full">
-                      <input
-                        type="number" min="0" max="24" step="0.5"
-                        className="w-full px-2 py-2.5 text-center bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-bold text-zinc-800 shadow-sm"
-                        value={formData.weeklySchedule[day] ?? formData.dailyHours}
-                        title={label}
-                        onChange={e => {
-                          const val = Number(e.target.value);
-                          setFormData(prev => ({
-                            ...prev,
-                            weeklySchedule: { ...prev.weeklySchedule, [day]: val }
-                          }));
-                        }}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
+                  { day: 6, label: 'Sábado' },
+                  { day: 0, label: 'Domingo' },
+                ] as { day: number; label: string }[]).map(({ day, label }) => {
+                  const isWeekend = day === 0 || day === 6;
+                  const val = formData.weeklySchedule[day] ?? 0;
+                  return (
+                    <div key={day} className="flex flex-col items-center gap-1.5">
+                      <span className={`text-[11px] font-bold uppercase tracking-widest ${isWeekend ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        {label.slice(0, 2)}
+                      </span>
+                      <div className="relative w-full">
+                        <input
+                          type="number" min="0" max="24" step="0.5"
+                          className={`w-full px-1 py-2.5 text-center border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-bold shadow-sm ${
+                            val === 0
+                              ? 'bg-zinc-100 border-zinc-200 text-zinc-400'
+                              : 'bg-white border-zinc-200 text-zinc-800'
+                          }`}
+                          value={val}
+                          title={label}
+                          onChange={e => {
+                            const newVal = Number(e.target.value);
+                            setFormData(prev => ({
+                              ...prev,
+                              weeklySchedule: { ...prev.weeklySchedule, [day]: newVal }
+                            }));
+                          }}
+                        />
+                        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -783,19 +787,19 @@ export const Placements: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap gap-4">
                     <div className="bg-white border border-zinc-200 rounded-xl px-4 py-2 text-center shadow-sm">
-                      <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Días Laborables</span>
-                      <span className="text-lg font-bold text-zinc-900">{getWorkingDaysCount(formData.startDate, formData.endDate, formData.excludedDates)}</span>
+                      <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Días con horas</span>
+                      <span className="text-lg font-bold text-zinc-900">{getWorkingDaysCount(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates)}</span>
                     </div>
                     <div className="bg-white border border-zinc-200 rounded-xl px-4 py-2 text-center shadow-sm">
                       <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Horas Totales</span>
-                      <span className="text-lg font-bold text-zinc-900">{getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates)}h</span>
+                      <span className="text-lg font-bold text-zinc-900">{getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours)}h</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Progress bar */}
                 {(() => {
-                  const totalCalcHours = getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates);
+                  const totalCalcHours = getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours);
                   const completedHours = getCompletedHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates);
                   const percentage = totalCalcHours > 0 ? Math.round((completedHours / totalCalcHours) * 100) : 0;
 
@@ -877,35 +881,36 @@ export const Placements: React.FC = () => {
                         for (let d = 1; d <= daysInMonth; d++) {
                           const dayDate = new Date(year, month, d, 0, 0, 0, 0);
                           const isInside = dayDate >= start && dayDate <= end;
-                          const isWeekendDay = dayDate.getDay() === 0 || dayDate.getDay() === 6;
-                          const isCompleted = isInside && !isWeekendDay && dayDate <= todayMidnight;
-                          const isPending = isInside && !isWeekendDay && dayDate > todayMidnight;
+                          const schedHours = getDayHours(dayDate, formData.weeklySchedule, 0);
+                          const isNonWorkingDay = schedHours === 0;
+                          const isCompleted = isInside && !isNonWorkingDay && dayDate <= todayMidnight;
+                          const isPending = isInside && !isNonWorkingDay && dayDate > todayMidnight;
 
                           let cellClass = "h-11 rounded-lg border flex flex-col items-center justify-between p-1 text-xs relative transition-all ";
                           let label = "";
                           const dateStr = isInside ? format(dayDate, 'yyyy-MM-dd') : '';
-                          const isExcluded = isInside && !isWeekendDay && formData.excludedDates.includes(dateStr);
+                          const isExcluded = isInside && !isNonWorkingDay && formData.excludedDates.includes(dateStr);
 
                           if (isInside) {
-                            if (isWeekendDay) {
+                            if (isNonWorkingDay) {
                               cellClass += "bg-zinc-100/60 border-zinc-200 text-zinc-400 cursor-not-allowed";
-                              label = "Finde";
+                              label = schedHours === 0 && (dayDate.getDay() === 0 || dayDate.getDay() === 6) ? 'Finde' : '0h';
                             } else if (isExcluded) {
-                              cellClass += "bg-white border-zinc-200 text-zinc-400 shadow-sm cursor-pointer hover:bg-zinc-50";
-                              label = "0h";
+                              cellClass += "bg-amber-50 border-amber-200 text-amber-600 shadow-sm cursor-pointer hover:bg-amber-100";
+                              label = "Aus.";
                             } else if (isCompleted) {
                               cellClass += "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold shadow-sm cursor-pointer hover:opacity-80";
-                              label = `+${getDayHours(dayDate, formData.weeklySchedule, formData.dailyHours)}h`;
+                              label = `+${schedHours}h`;
                             } else if (isPending) {
                               cellClass += "bg-blue-50 border-blue-200 text-blue-800 font-semibold shadow-sm cursor-pointer hover:opacity-80";
-                              label = `+${getDayHours(dayDate, formData.weeklySchedule, formData.dailyHours)}h`;
+                              label = `+${schedHours}h`;
                             }
                           } else {
                             cellClass += "bg-transparent border-transparent text-zinc-300";
                           }
 
                           const handleDayClick = () => {
-                            if (!isInside || isWeekendDay) return;
+                            if (!isInside || isNonWorkingDay) return;
                             setFormData(prev => {
                               const alreadyExcluded = prev.excludedDates.includes(dateStr);
                               const newExcluded = alreadyExcluded
@@ -920,7 +925,7 @@ export const Placements: React.FC = () => {
                               key={`day-${mIdx}-${d}`} 
                               className={cellClass} 
                               onClick={handleDayClick}
-                              title={isInside && !isWeekendDay ? `${d} ${monthName} - ${isExcluded ? 'Excluido (haz clic para incluir)' : (isCompleted ? 'Horas realizadas (haz clic para excluir)' : 'Horas pendientes (haz clic para excluir)')}` : undefined}
+                              title={isInside && !isNonWorkingDay ? `${d} ${monthName} - ${isExcluded ? 'Ausencia (clic para revertir)' : (isCompleted ? 'Horas realizadas (clic para marcar ausencia)' : 'Horas pendientes (clic para marcar ausencia)')}` : undefined}
                             >
                               <span className="self-start text-[10px] pl-0.5">{d}</span>
                               {label && <span className="text-[8px] font-bold mt-auto leading-none uppercase tracking-wider">{label}</span>}
