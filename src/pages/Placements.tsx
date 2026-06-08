@@ -174,7 +174,7 @@ export const Placements: React.FC = () => {
           }
         } catch (e) {}
 
-        const weekdaysCount = getWorkingDaysCount(placement.startDate, placement.endDate, excluded);
+        const weekdaysCount = getWorkingDaysCount(placement.startDate, placement.endDate, weeklySchedule, 4, excluded);
         const calculatedDaily = weekdaysCount > 0 ? Math.round((placement.hours / weekdaysCount) * 10) / 10 : 4;
         const currentDailyHours = placement.dailyHours !== undefined ? placement.dailyHours : calculatedDaily;
 

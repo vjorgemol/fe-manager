@@ -12,7 +12,7 @@ import type { Student } from '../types';
 export const Students: React.FC = () => {
   // Acceso al estado global de la aplicación a través del contexto
   const { students, addStudent, deleteStudent, updateStudent, academicYear } = useData();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Estados locales para la gestión de la interfaz
   const [isAdding, setIsAdding] = useState(false);
