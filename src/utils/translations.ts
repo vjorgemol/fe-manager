@@ -600,10 +600,7 @@ export const translations = {
     'placements.parsing.instructorConfirm': 'Vols desar aquestes dades com a instructor assignat a la fitxa de l\'empresa?',
     'placements.parsing.instructorNo': 'No, mantenir',
     'placements.parsing.instructorYes': 'Sí, actualitzar',
-    'placements.weeklySchedule.short': 'Horari',
-    'placements.selectStudent': 'Selecciona un alumne',
-    'placements.selectCompany': 'Selecciona una empresa',
-    'placements.selectTutor': 'Selecciona un tutor (opcional)',
+
 
     // Communications
     'comms.title': 'Comunicacions',
