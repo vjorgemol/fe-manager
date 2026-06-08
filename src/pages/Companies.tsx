@@ -11,27 +11,27 @@ import { Plus, Minus, Trash2, MapPin, Edit, Search, Phone, Download, UploadCloud
 export const Companies: React.FC = () => {
   const { companies, addCompany, deleteCompany, updateCompany, academicYear } = useData();
   const { t, language } = useLanguage();
-  
+
   // Estados de la interfaz
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+
   // Estado del formulario
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    email: '', 
-    location: '', 
-    address: '', 
-    contactPerson: '', 
-    collaborationStatus: 'none' as 'none' | 'prospecting' | 'accepted' | 'rejected', 
-    inactiveEmail: false, 
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    location: '',
+    address: '',
+    contactPerson: '',
+    collaborationStatus: 'none' as 'none' | 'prospecting' | 'accepted' | 'rejected',
+    inactiveEmail: false,
     phone: '',
     instructorName: '',
     instructorDni: '',
     instructorEmail: ''
   });
-  
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
 
@@ -74,13 +74,13 @@ export const Companies: React.FC = () => {
         else if (company.prospectingYears?.includes(academicYear)) status = 'prospecting';
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setFormData({ 
-          name: company.name, 
-          email: company.email, 
-          location: company.location, 
-          address: company.address || '', 
-          contactPerson: company.contactPerson || '', 
-          collaborationStatus: status, 
+        setFormData({
+          name: company.name,
+          email: company.email,
+          location: company.location,
+          address: company.address || '',
+          contactPerson: company.contactPerson || '',
+          collaborationStatus: status,
           inactiveEmail: !!company.inactiveEmail,
           phone: company.phone || '',
           instructorName: company.instructorName || '',
@@ -89,8 +89,8 @@ export const Companies: React.FC = () => {
         });
         setEditingId(editId);
         setIsAdding(true);
-        window.dispatchEvent(new CustomEvent('editing-element', { 
-          detail: { name: `Editar: ${company.name}` } 
+        window.dispatchEvent(new CustomEvent('editing-element', {
+          detail: { name: `Editar: ${company.name}` }
         }));
       }
     } else if (isNew) {
@@ -118,7 +118,7 @@ export const Companies: React.FC = () => {
       try {
         const text = event.target?.result as string;
         const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-        
+
         if (lines.length < 2) {
           setImportResult({ count: 0, skipped: 0, error: 'El archivo está vacío o solo contiene la cabecera.' });
           return;
@@ -143,7 +143,7 @@ export const Companies: React.FC = () => {
         const header = lines[0];
         const separator = header.includes(';') ? ';' : ',';
         const headers = splitCSVLine(header, separator).map(h => h.toLowerCase());
-        
+
         const nameIdx = headers.findIndex(h => h.includes('nombre') || h.includes('empresa'));
         const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('correo'));
         const locationIdx = headers.findIndex(h => h.includes('localidad') || h.includes('población') || h.includes('poblacion') || h.includes('ciudad') || h.includes('municipio'));
@@ -172,18 +172,18 @@ export const Companies: React.FC = () => {
 
           if (name && location) {
             // Check duplicates by exact name or email
-            const isDuplicate = companies.some(c => 
-              c.name.toLowerCase() === name.toLowerCase() || 
+            const isDuplicate = companies.some(c =>
+              c.name.toLowerCase() === name.toLowerCase() ||
               (email && c.email.toLowerCase() === email.toLowerCase())
             );
 
             if (!isDuplicate) {
-              toImport.push({ 
-                name, 
-                location, 
-                email, 
-                address, 
-                contactPerson, 
+              toImport.push({
+                name,
+                location,
+                email,
+                address,
+                contactPerson,
                 phone,
                 collaborationStatus: 'none',
                 inactiveEmail: false
@@ -193,7 +193,7 @@ export const Companies: React.FC = () => {
             }
           }
         }
-        
+
         if (toImport.length > 0 || skipped > 0) {
           setPendingImport({ companies: toImport, skipped });
         } else {
@@ -229,27 +229,27 @@ export const Companies: React.FC = () => {
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingId) {
       const company = companies.find(c => c.id === editingId);
       // Obtener listas actuales de años por cada estado
       let pYears = company?.prospectingYears ? company.prospectingYears.split(',').filter(Boolean) : [];
       let aYears = company?.acceptedYears ? company.acceptedYears.split(',').filter(Boolean) : [];
       let rYears = company?.rejectedYears ? company.rejectedYears.split(',').filter(Boolean) : [];
-      
+
       // Limpiar el curso actual de todas las listas antes de re-asignar el nuevo estado
       pYears = pYears.filter(y => y !== academicYear);
       aYears = aYears.filter(y => y !== academicYear);
       rYears = rYears.filter(y => y !== academicYear);
-      
+
       // Añadir el curso actual a la lista del estado seleccionado
       if (formData.collaborationStatus === 'prospecting') pYears.push(academicYear);
       if (formData.collaborationStatus === 'accepted') aYears.push(academicYear);
       if (formData.collaborationStatus === 'rejected') rYears.push(academicYear);
-      
-      updateCompany({ 
-        ...formData, 
-        id: editingId, 
+
+      updateCompany({
+        ...formData,
+        id: editingId,
         prospectingYears: pYears.join(','),
         acceptedYears: aYears.join(','),
         rejectedYears: rYears.join(',')
@@ -259,9 +259,9 @@ export const Companies: React.FC = () => {
       const pYears = formData.collaborationStatus === 'prospecting' ? academicYear : '';
       const aYears = formData.collaborationStatus === 'accepted' ? academicYear : '';
       const rYears = formData.collaborationStatus === 'rejected' ? academicYear : '';
-      
-      addCompany({ 
-        ...formData, 
+
+      addCompany({
+        ...formData,
         prospectingYears: pYears,
         acceptedYears: aYears,
         rejectedYears: rYears
@@ -308,7 +308,7 @@ export const Companies: React.FC = () => {
         `"${status}"`
       ].join(',');
     });
-    
+
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -321,7 +321,7 @@ export const Companies: React.FC = () => {
   };
 
   // Filtrado por múltiples campos de texto
-  const filtered = companies.filter(c => 
+  const filtered = companies.filter(c =>
     `${c.name} ${c.location} ${c.address || ''} ${c.email} ${c.contactPerson || ''} ${c.phone || ''}`.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -338,21 +338,21 @@ export const Companies: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <input type="file" accept=".csv" ref={csvInputRef} className="hidden" onChange={handleCSVImport} />
-          <button 
+          <button
             onClick={() => csvInputRef.current?.click()}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <UploadCloud size={20} className="sm:mr-2" />
             <span className="hidden sm:inline">{t('companies.importCsv')}</span>
           </button>
-          <button 
+          <button
             onClick={exportToCSV}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <Download size={20} className="sm:mr-2" />
             <span className="hidden sm:inline">{t('companies.exportCsv')}</span>
           </button>
-          <button 
+          <button
             onClick={() => {
               if (isAdding) resetForm();
               else {
@@ -363,11 +363,10 @@ export const Companies: React.FC = () => {
                 document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className={`p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm ${
-              isAdding 
-                ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20' 
+            className={`p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm ${isAdding
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20'
                 : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/20'
-            }`}
+              }`}
           >
             {isAdding ? (
               <Minus size={20} className="sm:mr-2" />
@@ -386,53 +385,53 @@ export const Companies: React.FC = () => {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.name')}</label>
-              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.email')}</label>
-              <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.location')}</label>
-              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+              <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.address')}</label>
-              <input type="text" placeholder={t('companies.form.addressPlaceholder')} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+              <input type="text" placeholder={t('companies.form.addressPlaceholder')} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.contact')}</label>
-              <input type="text" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} />
+              <input type="text" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.phone')}</label>
-              <input type="tel" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+              <input type="tel" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
             </div>
-            
+
             <div className="md:col-span-3 mt-4 pt-4 border-t border-zinc-100">
               <h4 className="font-semibold text-zinc-800 mb-4">{t('companies.form.instructorTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.instructorName')}</label>
-                  <input type="text" placeholder="Ej: Enrique San Valero" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorName} onChange={e => setFormData({...formData, instructorName: e.target.value})} />
+                  <input type="text" placeholder="Ej: Enrique San Valero" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorName} onChange={e => setFormData({ ...formData, instructorName: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.instructorDni')}</label>
-                  <input type="text" placeholder="Ej: 12345678A" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorDni} onChange={e => setFormData({...formData, instructorDni: e.target.value})} />
+                  <input type="text" placeholder="Ej: 12345678A" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorDni} onChange={e => setFormData({ ...formData, instructorDni: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.instructorEmail')}</label>
-                  <input type="email" placeholder="Ej: instructor@empresa.com" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorEmail} onChange={e => setFormData({...formData, instructorEmail: e.target.value})} />
+                  <input type="email" placeholder="Ej: instructor@empresa.com" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.instructorEmail} onChange={e => setFormData({ ...formData, instructorEmail: e.target.value })} />
                 </div>
               </div>
             </div>
 
             <div className="md:col-span-2 mt-4">
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('companies.form.status', { year: academicYear })}</label>
-              <select 
+              <select
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                 value={formData.collaborationStatus}
-                onChange={e => setFormData({...formData, collaborationStatus: e.target.value as any})}
+                onChange={e => setFormData({ ...formData, collaborationStatus: e.target.value as any })}
               >
                 <option value="none">{t('companies.form.status.none')}</option>
                 <option value="prospecting">{t('companies.form.status.prospecting')}</option>
@@ -442,11 +441,11 @@ export const Companies: React.FC = () => {
             </div>
             <div>
               <label className="flex items-center gap-2 cursor-pointer bg-red-50 border border-red-200 px-4 py-2.5 rounded-xl hover:bg-red-100 transition-colors mt-6">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   className="w-5 h-5 rounded border-red-300 text-red-600 focus:ring-red-500 bg-white"
                   checked={formData.inactiveEmail}
-                  onChange={e => setFormData({...formData, inactiveEmail: e.target.checked})}
+                  onChange={e => setFormData({ ...formData, inactiveEmail: e.target.checked })}
                 />
                 <span className="text-sm font-medium text-red-700" title={t('companies.form.inactiveEmailTooltip')}>{t('companies.form.inactiveEmail')}</span>
               </label>
@@ -465,8 +464,8 @@ export const Companies: React.FC = () => {
         <div className="p-4 border-b border-zinc-100 flex items-center bg-zinc-50/50">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder={t('companies.searchPlaceholder')}
               className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
               value={search}
@@ -484,8 +483,8 @@ export const Companies: React.FC = () => {
           </div>
         ) : (
           filtered.map(c => (
-            <div 
-              key={c.id} 
+            <div
+              key={c.id}
               className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 group hover:shadow-md transition-all relative cursor-pointer"
               onClick={() => handleEdit(c)}
             >
@@ -520,8 +519,8 @@ export const Companies: React.FC = () => {
                 {c.phone && (
                   <p className="text-sm text-zinc-500 flex items-center gap-1.5">
                     <Phone size={14} className="text-zinc-400" />
-                    <a 
-                      href={`tel:${c.phone}`} 
+                    <a
+                      href={`tel:${c.phone}`}
                       onClick={(e) => e.stopPropagation()}
                       className="text-primary-600 hover:underline font-medium"
                     >
@@ -530,7 +529,7 @@ export const Companies: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               {(c.instructorName || c.instructorEmail) && (
                 <div className="mb-4 bg-zinc-50 border border-zinc-100 rounded-xl p-3" onClick={(e) => e.stopPropagation()}>
                   <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">{t('companies.form.instructorTitle').split(' (')[0]}</div>
@@ -538,14 +537,14 @@ export const Companies: React.FC = () => {
                   <div className="text-sm text-zinc-500">{c.instructorEmail || 'Email no disponible'}</div>
                 </div>
               )}
-              
+
               <div className="flex flex-col gap-2">
                 <div className="flex items-center text-xs font-medium text-zinc-600 bg-zinc-50 inline-flex px-3 py-1.5 rounded-lg w-fit">
                   <MapPin size={14} className="mr-1.5 text-zinc-400 shrink-0" />
                   {c.location}
                 </div>
                 {(c.address || c.location) && (
-                  <a 
+                  <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name} ${c.address ? `${c.address}, ${c.location}` : c.location}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
