@@ -55,34 +55,68 @@ export const Placements: React.FC = () => {
     }
   };
 
-  const getCompletedWorkingDaysCount = (startStr: string, endStr: string, excluded: string[] = []): number => {
+  // Returns hours for a specific date based on weekday schedule, fallback to dailyHours
+  const getDayHours = (date: Date, schedule: Record<number, number>, fallback: number): number => {
+    const h = schedule[date.getDay()];
+    return h !== undefined ? h : fallback;
+  };
+
+  // Total hours summing per-day schedule over all working (non-excluded) days in range
+  const getTotalHoursWithSchedule = (
+    startStr: string, endStr: string,
+    schedule: Record<number, number>, fallback: number,
+    excluded: string[] = []
+  ): number => {
     if (!startStr || !endStr) return 0;
     try {
       const start = parseLocalDate(startStr);
       const end = parseLocalDate(endStr);
       if (start > end) return 0;
-
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-
-      if (today < start) return 0;
-
-      const limit = today > end ? end : today;
-      let count = 0;
+      let total = 0;
       const current = new Date(start);
-      while (current <= limit) {
-        if (current.getDay() !== 0 && current.getDay() !== 6) {
+      while (current <= end) {
+        const day = current.getDay();
+        if (day !== 0 && day !== 6) {
           const dateStr = format(current, 'yyyy-MM-dd');
           if (!excluded.includes(dateStr)) {
-            count++;
+            total += getDayHours(current, schedule, fallback);
           }
         }
         current.setDate(current.getDate() + 1);
       }
-      return count;
-    } catch (e) {
-      return 0;
-    }
+      return Math.round(total * 10) / 10;
+    } catch (e) { return 0; }
+  };
+
+  // Completed hours: same but limited to today
+  const getCompletedHoursWithSchedule = (
+    startStr: string, endStr: string,
+    schedule: Record<number, number>, fallback: number,
+    excluded: string[] = []
+  ): number => {
+    if (!startStr || !endStr) return 0;
+    try {
+      const start = parseLocalDate(startStr);
+      const end = parseLocalDate(endStr);
+      if (start > end) return 0;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      if (today < start) return 0;
+      const limit = today > end ? end : today;
+      let total = 0;
+      const current = new Date(start);
+      while (current <= limit) {
+        const day = current.getDay();
+        if (day !== 0 && day !== 6) {
+          const dateStr = format(current, 'yyyy-MM-dd');
+          if (!excluded.includes(dateStr)) {
+            total += getDayHours(current, schedule, fallback);
+          }
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return Math.round(total * 10) / 10;
+    } catch (e) { return 0; }
   };
 
   useEffect(() => {
@@ -117,9 +151,27 @@ export const Placements: React.FC = () => {
           excluded = [];
         }
 
+        let weeklySchedule: Record<number, number> = { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 };
+        try {
+          if (placement.weeklySchedule) {
+            const parsed = JSON.parse(placement.weeklySchedule);
+            if (parsed && typeof parsed === 'object') {
+              weeklySchedule = Object.fromEntries(
+                Object.entries(parsed).map(([k, v]) => [Number(k), Number(v)])
+              ) as Record<number, number>;
+            }
+          }
+        } catch (e) {}
+
         const weekdaysCount = getWorkingDaysCount(placement.startDate, placement.endDate, excluded);
         const calculatedDaily = weekdaysCount > 0 ? Math.round((placement.hours / weekdaysCount) * 10) / 10 : 4;
         const currentDailyHours = placement.dailyHours !== undefined ? placement.dailyHours : calculatedDaily;
+
+        // If weeklySchedule was empty (legacy data), populate from dailyHours
+        const hasSchedule = placement.weeklySchedule && placement.weeklySchedule !== '{}';
+        if (!hasSchedule) {
+          weeklySchedule = { 1: currentDailyHours, 2: currentDailyHours, 3: currentDailyHours, 4: currentDailyHours, 5: currentDailyHours };
+        }
 
         setFormData({
           studentId: placement.studentId,
@@ -134,7 +186,8 @@ export const Placements: React.FC = () => {
           anexoA3: placement.anexoA3 || '',
           allSigned: !!placement.allSigned,
           dailyHours: currentDailyHours,
-          excludedDates: excluded
+          excludedDates: excluded,
+          weeklySchedule
         });
         setCompanySearch('');
         setEditingId(editId);
@@ -159,7 +212,8 @@ export const Placements: React.FC = () => {
         anexoA3: '',
         allSigned: false,
         dailyHours: 4,
-        excludedDates: []
+        excludedDates: [],
+        weeklySchedule: { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 }
       });
       setCompanySearch('');
       setEditingId(null);
@@ -180,7 +234,8 @@ export const Placements: React.FC = () => {
         anexoA3: '',
         allSigned: false,
         dailyHours: 4,
-        excludedDates: []
+        excludedDates: [],
+        weeklySchedule: { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 }
       });
       setCompanySearch('');
       setEditingId(null);
@@ -202,18 +257,22 @@ export const Placements: React.FC = () => {
     anexoA3: '' as string | undefined,
     allSigned: false,
     dailyHours: 4,
-    excludedDates: [] as string[]
+    excludedDates: [] as string[],
+    weeklySchedule: { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 } as Record<number, number>
   });
 
   React.useEffect(() => {
-    if (formData.startDate && formData.endDate && formData.dailyHours) {
-      const workingDays = getWorkingDaysCount(formData.startDate, formData.endDate, formData.excludedDates);
-      const calculatedHours = workingDays * formData.dailyHours;
+    if (formData.startDate && formData.endDate) {
+      const calculatedHours = getTotalHoursWithSchedule(
+        formData.startDate, formData.endDate,
+        formData.weeklySchedule, formData.dailyHours,
+        formData.excludedDates
+      );
       if (calculatedHours > 0 && calculatedHours !== formData.hours) {
         setFormData(prev => ({ ...prev, hours: calculatedHours }));
       }
     }
-  }, [formData.startDate, formData.endDate, formData.dailyHours, formData.excludedDates]);
+  }, [formData.startDate, formData.endDate, formData.dailyHours, formData.excludedDates, formData.weeklySchedule]);
 
   const sortedPlacements = [...placements].sort((a, b) => {
     const studentA = students.find(s => s.id === a.studentId);
@@ -243,7 +302,8 @@ export const Placements: React.FC = () => {
     }
     const submissionData = {
       ...formData,
-      excludedDates: JSON.stringify(formData.excludedDates)
+      excludedDates: JSON.stringify(formData.excludedDates),
+      weeklySchedule: JSON.stringify(formData.weeklySchedule)
     };
     if (editingId) {
       const original = placements.find(p => p.id === editingId);
@@ -652,7 +712,47 @@ export const Placements: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Duración diaria (horas)</label>
-              <input required type="number" min="0.5" max="24" step="0.5" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.dailyHours} onChange={e => setFormData({...formData, dailyHours: Number(e.target.value)})} />
+              <input
+                type="number" min="0.5" max="24" step="0.5"
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                value={formData.dailyHours}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  setFormData(prev => ({
+                    ...prev,
+                    dailyHours: val,
+                    weeklySchedule: { 1: val, 2: val, 3: val, 4: val, 5: val }
+                  }));
+                }}
+              />
+            </div>
+
+            {/* Weekly schedule widget */}
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Horario semanal (horas por día)</label>
+              <div className="grid grid-cols-5 gap-3">
+                {([{ day: 1, label: 'Lunes' }, { day: 2, label: 'Martes' }, { day: 3, label: 'Miércoles' }, { day: 4, label: 'Jueves' }, { day: 5, label: 'Viernes' }] as { day: number; label: string }[]).map(({ day, label }) => (
+                  <div key={day} className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{label.slice(0, 2)}</span>
+                    <div className="relative w-full">
+                      <input
+                        type="number" min="0" max="24" step="0.5"
+                        className="w-full px-2 py-2 text-center bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-semibold text-zinc-800"
+                        value={formData.weeklySchedule[day] ?? formData.dailyHours}
+                        title={label}
+                        onChange={e => {
+                          const val = Number(e.target.value);
+                          setFormData(prev => ({
+                            ...prev,
+                            weeklySchedule: { ...prev.weeklySchedule, [day]: val }
+                          }));
+                        }}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Horas Totales</label>
@@ -691,18 +791,16 @@ export const Placements: React.FC = () => {
                       <span className="text-lg font-bold text-zinc-900">{getWorkingDaysCount(formData.startDate, formData.endDate, formData.excludedDates)}</span>
                     </div>
                     <div className="bg-white border border-zinc-200 rounded-xl px-4 py-2 text-center shadow-sm">
-                      <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Horas Diarias</span>
-                      <span className="text-lg font-bold text-zinc-900">{formData.dailyHours}h</span>
+                      <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Horas Totales</span>
+                      <span className="text-lg font-bold text-zinc-900">{getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates)}h</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Progress bar */}
                 {(() => {
-                  const totalDays = getWorkingDaysCount(formData.startDate, formData.endDate, formData.excludedDates);
-                  const totalCalcHours = totalDays * formData.dailyHours;
-                  const completedDays = getCompletedWorkingDaysCount(formData.startDate, formData.endDate, formData.excludedDates);
-                  const completedHours = completedDays * formData.dailyHours;
+                  const totalCalcHours = getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates);
+                  const completedHours = getCompletedHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates);
                   const percentage = totalCalcHours > 0 ? Math.round((completedHours / totalCalcHours) * 100) : 0;
 
                   return (
@@ -801,10 +899,10 @@ export const Placements: React.FC = () => {
                               label = "0h";
                             } else if (isCompleted) {
                               cellClass += "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold shadow-sm cursor-pointer hover:opacity-80";
-                              label = `+${formData.dailyHours}h`;
+                              label = `+${getDayHours(dayDate, formData.weeklySchedule, formData.dailyHours)}h`;
                             } else if (isPending) {
                               cellClass += "bg-blue-50 border-blue-200 text-blue-800 font-semibold shadow-sm cursor-pointer hover:opacity-80";
-                              label = `+${formData.dailyHours}h`;
+                              label = `+${getDayHours(dayDate, formData.weeklySchedule, formData.dailyHours)}h`;
                             }
                           } else {
                             cellClass += "bg-transparent border-transparent text-zinc-300";

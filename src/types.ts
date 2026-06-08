@@ -56,4 +56,5 @@ export interface Placement {
   trackingCount?: number;
   dailyHours?: number;
   excludedDates?: string;
+  weeklySchedule?: string;
 }

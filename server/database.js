@@ -108,6 +108,9 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'excludedDates')) {
         db.run("ALTER TABLE placements ADD COLUMN excludedDates TEXT DEFAULT '[]'");
       }
+      if (!columns.some(c => c.name === 'weeklySchedule')) {
+        db.run("ALTER TABLE placements ADD COLUMN weeklySchedule TEXT DEFAULT '{}'");
+      }
     }
   });
 
