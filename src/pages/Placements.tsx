@@ -104,6 +104,7 @@ export const Placements: React.FC = () => {
     const isNew = searchParams.get('new') === 'true';
 
     if (editId) {
+      if (editId === editingId) return; // Prevent resetting when already editing this placement
       const placement = placements.find(p => p.id === editId);
       if (placement) {
         let excluded: string[] = [];
@@ -144,6 +145,7 @@ export const Placements: React.FC = () => {
         }));
       }
     } else if (isNew) {
+      if (isAdding && editingId === null) return; // Prevent resetting when already adding a new placement
       setFormData({
         studentId: '',
         companyId: '',
@@ -164,6 +166,7 @@ export const Placements: React.FC = () => {
       setIsAdding(true);
       window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: 'Nueva Asignación' } }));
     } else {
+      if (!isAdding && editingId === null) return; // Prevent resetting when already closed
       setFormData({
         studentId: '',
         companyId: '',
@@ -184,7 +187,7 @@ export const Placements: React.FC = () => {
       setIsAdding(false);
       window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
     }
-  }, [searchParams, placements, students]);
+  }, [searchParams, placements, students, editingId, isAdding]);
   
   const [formData, setFormData] = useState({
     studentId: '',
