@@ -51,7 +51,8 @@ db.serialize(() => {
     startDate TEXT,
     endDate TEXT,
     status TEXT,
-    academicYear TEXT
+    academicYear TEXT,
+    dailyHours INTEGER DEFAULT 4
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS teachers (
@@ -99,6 +100,9 @@ db.serialize(() => {
       }
       if (!columns.some(c => c.name === 'trackingCount')) {
         db.run("ALTER TABLE placements ADD COLUMN trackingCount INTEGER DEFAULT 0");
+      }
+      if (!columns.some(c => c.name === 'dailyHours')) {
+        db.run("ALTER TABLE placements ADD COLUMN dailyHours INTEGER DEFAULT 4");
       }
     }
   });

@@ -54,4 +54,5 @@ export interface Placement {
   a2Signed?: boolean;
   a3Signed?: boolean;
   trackingCount?: number;
+  dailyHours?: number;
 }

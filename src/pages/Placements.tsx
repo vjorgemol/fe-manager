@@ -26,6 +26,59 @@ export const Placements: React.FC = () => {
   const [pendingImport, setPendingImport] = useState<{ placements: any[], skipped: number } | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
 
+  const parseLocalDate = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
+  };
+
+  const getWorkingDaysCount = (startStr: string, endStr: string): number => {
+    if (!startStr || !endStr) return 0;
+    try {
+      const start = parseLocalDate(startStr);
+      const end = parseLocalDate(endStr);
+      if (start > end) return 0;
+      
+      let count = 0;
+      const current = new Date(start);
+      while (current <= end) {
+        if (current.getDay() !== 0 && current.getDay() !== 6) {
+          count++;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  const getCompletedWorkingDaysCount = (startStr: string, endStr: string): number => {
+    if (!startStr || !endStr) return 0;
+    try {
+      const start = parseLocalDate(startStr);
+      const end = parseLocalDate(endStr);
+      if (start > end) return 0;
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+      if (today < start) return 0;
+
+      const limit = today > end ? end : today;
+      let count = 0;
+      const current = new Date(start);
+      while (current <= limit) {
+        if (current.getDay() !== 0 && current.getDay() !== 6) {
+          count++;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  };
+
   useEffect(() => {
     const handleReset = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -47,6 +100,10 @@ export const Placements: React.FC = () => {
     if (editId) {
       const placement = placements.find(p => p.id === editId);
       if (placement) {
+        const weekdaysCount = getWorkingDaysCount(placement.startDate, placement.endDate);
+        const calculatedDaily = weekdaysCount > 0 ? Math.round((placement.hours / weekdaysCount) * 10) / 10 : 4;
+        const currentDailyHours = placement.dailyHours !== undefined ? placement.dailyHours : calculatedDaily;
+
         setFormData({
           studentId: placement.studentId,
           companyId: placement.companyId,
@@ -58,7 +115,8 @@ export const Placements: React.FC = () => {
           anexoA1: placement.anexoA1 || '',
           anexoA2: placement.anexoA2 || '',
           anexoA3: placement.anexoA3 || '',
-          allSigned: !!placement.allSigned
+          allSigned: !!placement.allSigned,
+          dailyHours: currentDailyHours
         });
         setCompanySearch('');
         setEditingId(editId);
@@ -80,7 +138,8 @@ export const Placements: React.FC = () => {
         anexoA1: '',
         anexoA2: '',
         anexoA3: '',
-        allSigned: false
+        allSigned: false,
+        dailyHours: 4
       });
       setCompanySearch('');
       setEditingId(null);
@@ -98,7 +157,8 @@ export const Placements: React.FC = () => {
         anexoA1: '',
         anexoA2: '',
         anexoA3: '',
-        allSigned: false
+        allSigned: false,
+        dailyHours: 4
       });
       setCompanySearch('');
       setEditingId(null);
@@ -118,8 +178,19 @@ export const Placements: React.FC = () => {
     anexoA1: '' as string | undefined,
     anexoA2: '' as string | undefined,
     anexoA3: '' as string | undefined,
-    allSigned: false
+    allSigned: false,
+    dailyHours: 4
   });
+
+  React.useEffect(() => {
+    if (formData.startDate && formData.endDate && formData.dailyHours) {
+      const workingDays = getWorkingDaysCount(formData.startDate, formData.endDate);
+      const calculatedHours = workingDays * formData.dailyHours;
+      if (calculatedHours > 0 && calculatedHours !== formData.hours) {
+        setFormData(prev => ({ ...prev, hours: calculatedHours }));
+      }
+    }
+  }, [formData.startDate, formData.endDate, formData.dailyHours]);
 
   const sortedPlacements = [...placements].sort((a, b) => {
     const studentA = students.find(s => s.id === a.studentId);
@@ -545,16 +616,20 @@ export const Placements: React.FC = () => {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Horas Totales</label>
-              <input required type="number" min="1" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.hours} onChange={e => setFormData({...formData, hours: Number(e.target.value)})} />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Fecha de Inicio</label>
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Fecha de Fin</label>
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Duración diaria (horas)</label>
+              <input required type="number" min="0.5" max="24" step="0.5" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.dailyHours} onChange={e => setFormData({...formData, dailyHours: Number(e.target.value)})} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Horas Totales</label>
+              <input required type="number" min="1" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.hours} onChange={e => setFormData({...formData, hours: Number(e.target.value)})} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Estado</label>
@@ -572,6 +647,170 @@ export const Placements: React.FC = () => {
                 {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
+
+            {formData.startDate && formData.endDate && (
+              <div className="md:col-span-2 lg:col-span-3 bg-zinc-50 border border-zinc-200 rounded-2xl p-6 space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-zinc-200">
+                  <div>
+                    <h4 className="text-base font-bold text-zinc-900 flex items-center gap-2">
+                      <Calendar size={18} className="text-primary-600" />
+                      Calendario y Progreso de la Formación
+                    </h4>
+                    <p className="text-xs text-zinc-500 mt-0.5">Visualización de jornadas y cálculo de horas lectivas en tiempo real.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="bg-white border border-zinc-200 rounded-xl px-4 py-2 text-center shadow-sm">
+                      <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Días Laborables</span>
+                      <span className="text-lg font-bold text-zinc-900">{getWorkingDaysCount(formData.startDate, formData.endDate)}</span>
+                    </div>
+                    <div className="bg-white border border-zinc-200 rounded-xl px-4 py-2 text-center shadow-sm">
+                      <span className="text-[10px] text-zinc-500 block font-semibold uppercase tracking-wider">Horas Diarias</span>
+                      <span className="text-lg font-bold text-zinc-900">{formData.dailyHours}h</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                {(() => {
+                  const totalDays = getWorkingDaysCount(formData.startDate, formData.endDate);
+                  const totalCalcHours = totalDays * formData.dailyHours;
+                  const completedDays = getCompletedWorkingDaysCount(formData.startDate, formData.endDate);
+                  const completedHours = completedDays * formData.dailyHours;
+                  const percentage = totalCalcHours > 0 ? Math.round((completedHours / totalCalcHours) * 100) : 0;
+
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-sm font-medium">
+                        <span className="text-zinc-600 flex items-center gap-1.5">
+                          <Clock size={15} className="text-zinc-400" />
+                          Progreso acumulado: 
+                          <span className="font-bold text-zinc-900">{completedHours}h de {totalCalcHours}h</span>
+                        </span>
+                        <span className="text-primary-600 font-bold bg-primary-50 px-2 py-0.5 rounded-lg text-xs">{percentage}% completado</span>
+                      </div>
+                      <div className="w-full bg-zinc-200 h-3 rounded-full overflow-hidden shadow-inner">
+                        <div 
+                          className="bg-gradient-to-r from-emerald-500 to-primary-600 h-full rounded-full transition-all duration-500 ease-out" 
+                          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }} 
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-zinc-400 font-medium">
+                        <span>Inicio: {formData.startDate}</span>
+                        <span>Hoy: {format(new Date(), "yyyy-MM-dd")}</span>
+                        <span>Fin: {formData.endDate}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Calendar monthly grids */}
+                <div className="space-y-6">
+                  <h5 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Distribución mensual de jornadas</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {(() => {
+                      const months = [];
+                      try {
+                        const start = parseLocalDate(formData.startDate);
+                        const end = parseLocalDate(formData.endDate);
+                        if (start <= end) {
+                          const current = new Date(start.getFullYear(), start.getMonth(), 1);
+                          const last = new Date(end.getFullYear(), end.getMonth(), 1);
+                          while (current <= last) {
+                            months.push(new Date(current));
+                            current.setMonth(current.getMonth() + 1);
+                          }
+                        }
+                      } catch (e) {}
+
+                      if (months.length === 0) {
+                        return <div className="text-sm text-zinc-500 italic">Introduce un rango de fechas válido.</div>;
+                      }
+
+                      const start = parseLocalDate(formData.startDate);
+                      const end = parseLocalDate(formData.endDate);
+                      const today = new Date();
+                      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+
+                      const esMonthNames = [
+                        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                      ];
+
+                      return months.map((monthDate, mIdx) => {
+                        const year = monthDate.getFullYear();
+                        const month = monthDate.getMonth();
+                        const monthName = esMonthNames[month];
+
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const firstDayIndex = new Date(year, month, 1).getDay();
+                        // Adjust to start on Monday: Monday = 0, ..., Sunday = 6
+                        const startDayOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+                        const cells = [];
+                        // Padding cells
+                        for (let i = 0; i < startDayOffset; i++) {
+                          cells.push(<div key={`pad-${mIdx}-${i}`} className="h-10" />);
+                        }
+
+                        // Day cells
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const dayDate = new Date(year, month, d, 0, 0, 0, 0);
+                          const isInside = dayDate >= start && dayDate <= end;
+                          const isWeekendDay = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+                          const isCompleted = isInside && !isWeekendDay && dayDate <= todayMidnight;
+                          const isPending = isInside && !isWeekendDay && dayDate > todayMidnight;
+
+                          let cellClass = "h-11 rounded-lg border flex flex-col items-center justify-between p-1 text-xs relative transition-all ";
+                          let label = "";
+
+                          if (isInside) {
+                            if (isWeekendDay) {
+                              cellClass += "bg-zinc-100/60 border-zinc-200 text-zinc-400 cursor-not-allowed";
+                              label = "Finde";
+                            } else if (isCompleted) {
+                              cellClass += "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold shadow-sm";
+                              label = `+${formData.dailyHours}h`;
+                            } else if (isPending) {
+                              cellClass += "bg-blue-50 border-blue-200 text-blue-800 font-semibold shadow-sm";
+                              label = `+${formData.dailyHours}h`;
+                            }
+                          } else {
+                            cellClass += "bg-transparent border-transparent text-zinc-300";
+                          }
+
+                          cells.push(
+                            <div key={`day-${mIdx}-${d}`} className={cellClass} title={isInside && !isWeekendDay ? `${d} ${monthName} - ${isCompleted ? 'Horas realizadas' : 'Horas pendientes'}` : undefined}>
+                              <span className="self-start text-[10px] pl-0.5">{d}</span>
+                              {label && <span className="text-[8px] font-bold mt-auto leading-none uppercase tracking-wider">{label}</span>}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={`month-${mIdx}`} className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm flex flex-col">
+                            <h6 className="text-sm font-bold text-zinc-800 text-center mb-3">
+                              {monthName} {year}
+                            </h6>
+                            <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-zinc-400 mb-2">
+                              <span>L</span>
+                              <span>M</span>
+                              <span>X</span>
+                              <span>J</span>
+                              <span>V</span>
+                              <span>S</span>
+                              <span>D</span>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1 flex-1">
+                              {cells}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-zinc-100">
               <div>
