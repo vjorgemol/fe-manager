@@ -217,12 +217,59 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apiFetch(`/companies/${id}`, { method: 'DELETE' }).catch(console.error);
   };
 
+  // Helper to compute completed hours for status
+  const getCompletedHours = (p: Placement): number => {
+    if (!p.startDate || !p.endDate) return 0;
+    try {
+      const parseLocalDate = (dateStr: string) => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day, 0, 0, 0, 0);
+      };
+      const start = parseLocalDate(p.startDate);
+      const end = parseLocalDate(p.endDate);
+      if (start > end) return 0;
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      if (today < start) return 0;
+      
+      const limit = today > end ? end : today;
+      let total = 0;
+      const current = new Date(start);
+      
+      const schedule = p.weeklySchedule ? JSON.parse(p.weeklySchedule) : { 1:4, 2:4, 3:4, 4:4, 5:4 };
+      const fallback = p.dailyHours !== undefined ? p.dailyHours : 4;
+      const excluded = p.excludedDates ? (typeof p.excludedDates === 'string' ? JSON.parse(p.excludedDates) : p.excludedDates) : [];
+      
+      while (current <= limit) {
+        const h = schedule[current.getDay()];
+        const dayHours = h !== undefined ? h : fallback;
+        
+        if (dayHours > 0) {
+          const dateStr = [
+            current.getFullYear(),
+            String(current.getMonth() + 1).padStart(2, '0'),
+            String(current.getDate()).padStart(2, '0')
+          ].join('-');
+          if (!excluded.includes(dateStr)) total += dayHours;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return Math.round(total * 10) / 10;
+    } catch (e) {
+      return 0;
+    }
+  };
+
   // Helper to compute automatic status
   const getComputedStatus = (p: Placement): PlacementStatus => {
     if (p.status === 'cancelled') return 'cancelled';
     const today = new Date().toISOString().split('T')[0];
     if (today < p.startDate) return 'pending';
-    if (today > p.endDate) return 'completed';
+    
+    const completed = getCompletedHours(p);
+    if (completed >= p.hours) return 'completed';
+    
     return 'active';
   };
 

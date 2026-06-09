@@ -20,6 +20,8 @@ export const Placements: React.FC = () => {
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [companySearch, setCompanySearch] = useState('');
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [showHoursConfirm, setShowHoursConfirm] = useState(false);
+  const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
 
   const resetForm = () => {
     const params = new URLSearchParams(searchParams);
@@ -48,6 +50,7 @@ export const Placements: React.FC = () => {
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<{ placements: any[], skipped: number } | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+  const skipAutoCalcRef = React.useRef(false);
 
   const parseLocalDate = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -130,6 +133,20 @@ export const Placements: React.FC = () => {
     } catch (e) { return 0; }
   };
 
+  const getRemainingWorkingDays = (
+    startStr: string, endStr: string,
+    schedule: Record<number, number>, fallback: number,
+    excluded: string[] = []
+  ): number => {
+    if (!startStr || !endStr) return 0;
+    try {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const start = startStr > todayStr ? startStr : todayStr;
+      if (start > endStr) return 0;
+      return getWorkingDaysCount(start, endStr, schedule, fallback, excluded);
+    } catch (e) { return 0; }
+  };
+
   useEffect(() => {
     const handleReset = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -188,6 +205,7 @@ export const Placements: React.FC = () => {
           if (weeklySchedule[6] === undefined) weeklySchedule[6] = 0;
         }
 
+        skipAutoCalcRef.current = true;
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({
           studentId: placement.studentId,
@@ -215,6 +233,7 @@ export const Placements: React.FC = () => {
       }
     } else if (isNew) {
       if (isAdding && editingId === null) return; // Prevent resetting when already adding a new placement
+      skipAutoCalcRef.current = true;
       setFormData({
         studentId: '',
         companyId: '',
@@ -237,6 +256,7 @@ export const Placements: React.FC = () => {
       window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: 'Nueva Asignación' } }));
     } else {
       if (!isAdding && editingId === null) return; // Prevent resetting when already closed
+      skipAutoCalcRef.current = true;
       setFormData({
         studentId: '',
         companyId: '',
@@ -261,6 +281,10 @@ export const Placements: React.FC = () => {
   }, [searchParams, placements, students, editingId, isAdding]);
 
   React.useEffect(() => {
+    if (skipAutoCalcRef.current) {
+      skipAutoCalcRef.current = false;
+      return;
+    }
     if (formData.startDate && formData.endDate) {
       // Total is calculated WITHOUT excluded dates so clicking never changes it
       const calculatedHours = getTotalHoursWithSchedule(
@@ -300,16 +324,31 @@ export const Placements: React.FC = () => {
       alert(language === 'val' ? "Per favor, cerca i selecciona una empresa de la llista." : "Por favor, busca y selecciona una empresa de la lista.");
       return;
     }
+
     const scheduleValues = Object.values(formData.weeklySchedule);
     const avgDailyHours = scheduleValues.length > 0
       ? Math.round((scheduleValues.reduce((a, b) => a + b, 0) / scheduleValues.length) * 10) / 10
       : formData.dailyHours;
     const submissionData = {
       ...formData,
+      status: formData.status,
       dailyHours: avgDailyHours,
       excludedDates: JSON.stringify(formData.excludedDates),
       weeklySchedule: JSON.stringify(formData.weeklySchedule)
     };
+
+    const calculatedHours = getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours);
+    
+    if (calculatedHours > 0 && formData.hours !== calculatedHours) {
+      setPendingSubmissionData(submissionData);
+      setShowHoursConfirm(true);
+      return;
+    }
+
+    executeSubmission(submissionData);
+  };
+
+  const executeSubmission = (submissionData: any) => {
     if (editingId) {
       const original = placements.find(p => p.id === editingId);
       updatePlacement({ ...original, ...submissionData, id: editingId } as any);
@@ -317,6 +356,8 @@ export const Placements: React.FC = () => {
       addPlacement(submissionData as any);
     }
     resetForm();
+    setShowHoursConfirm(false);
+    setPendingSubmissionData(null);
   };
 
   const handleEdit = (placement: any) => {
@@ -713,12 +754,23 @@ export const Placements: React.FC = () => {
               )}
             </div>
             <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.tutor')}</label>
+              <select className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.teacherId} onChange={e => setFormData({...formData, teacherId: e.target.value})}>
+                <option value="">{t('placements.form.noTeacher')}</option>
+                {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.startDate')}</label>
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.endDate')}</label>
               <input required type="date" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.totalHours')}</label>
+              <input required type="number" min="1" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.hours} onChange={e => setFormData({...formData, hours: Number(e.target.value)})} />
             </div>
 
             {/* Weekly schedule widget: L M X J V S D */}
@@ -756,7 +808,7 @@ export const Placements: React.FC = () => {
                         <div className="relative w-full">
                           <input
                             type="number" min="0" max="24" step="0.5"
-                            className={`w-full px-1 py-2.5 text-center border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-bold shadow-sm ${
+                            className={`w-full pl-1 pr-4 py-2.5 text-center border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm font-bold shadow-sm ${
                               val === 0
                                 ? 'bg-zinc-100 border-zinc-200 text-zinc-400'
                                 : 'bg-white border-zinc-200 text-zinc-800'
@@ -771,7 +823,7 @@ export const Placements: React.FC = () => {
                               }));
                             }}
                           />
-                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold pointer-events-none">h</span>
                         </div>
                       </div>
                     );
@@ -780,26 +832,7 @@ export const Placements: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.totalHours')}</label>
-              <input required type="number" min="1" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.hours} onChange={e => setFormData({...formData, hours: Number(e.target.value)})} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.status')}</label>
-              <select className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as PlacementStatus})}>
-                <option value="pending">{t('placements.status.pending')}</option>
-                <option value="active">{t('placements.status.active')}</option>
-                <option value="completed">{t('placements.status.completed')}</option>
-                <option value="cancelled">{t('placements.status.cancelled')}</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('placements.tutor')}</label>
-              <select className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.teacherId} onChange={e => setFormData({...formData, teacherId: e.target.value})}>
-                <option value="">{t('placements.form.noTeacher')}</option>
-                {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
+
 
             {formData.startDate && formData.endDate && (
               <div className="md:col-span-2 lg:col-span-3 bg-zinc-50 border border-zinc-200 rounded-2xl p-6 space-y-6 animate-in fade-in duration-300">
@@ -824,9 +857,8 @@ export const Placements: React.FC = () => {
                 </div>
 
                 {(() => {
-                  const totalCalcHours = getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours);
                   const completedHours = getCompletedHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours, formData.excludedDates);
-                  const percentage = totalCalcHours > 0 ? Math.round((completedHours / totalCalcHours) * 100) : 0;
+                  const percentage = formData.hours > 0 ? Math.round((completedHours / formData.hours) * 100) : 0;
 
                   return (
                     <div className="space-y-2">
@@ -834,7 +866,7 @@ export const Placements: React.FC = () => {
                         <span className="text-zinc-600 flex items-center gap-1.5">
                           <Clock size={15} className="text-zinc-400" />
                           {t('placements.calendar.progress')}{' '}
-                          <span className="font-bold text-zinc-900">{completedHours}h {language === 'val' ? 'de' : 'de'} {totalCalcHours}h</span>
+                          <span className="font-bold text-zinc-900">{completedHours}h {language === 'val' ? 'de' : 'de'} {formData.hours}h</span>
                         </span>
                         <span className="text-primary-600 font-bold bg-primary-50 px-2 py-0.5 rounded-lg text-xs">{percentage}% {language === 'val' ? 'completat' : 'completado'}</span>
                       </div>
@@ -1218,8 +1250,23 @@ export const Placements: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto bg-zinc-50 p-4 rounded-xl" onClick={(e) => e.stopPropagation()}>
                   <div className="space-y-1">
                     <div className="flex items-center text-sm font-medium text-zinc-700">
-                      <Clock size={16} className="mr-2 text-zinc-400" />
-                      {p.hours} {language === 'val' ? 'hores' : 'horas'}
+                      <Clock size={16} className="mr-2 text-zinc-400 shrink-0" />
+                      {(() => {
+                        const schedule = p.weeklySchedule ? (typeof p.weeklySchedule === 'string' ? JSON.parse(p.weeklySchedule) : p.weeklySchedule) : { 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 };
+                        const fallback = p.dailyHours !== undefined ? p.dailyHours : 4;
+                        const excluded = p.excludedDates ? (typeof p.excludedDates === 'string' ? JSON.parse(p.excludedDates) : p.excludedDates) : [];
+                        const completed = getCompletedHoursWithSchedule(p.startDate, p.endDate, schedule, fallback, excluded);
+                        const remainingDays = getRemainingWorkingDays(p.startDate, p.endDate, schedule, fallback, excluded);
+                        
+                        return (
+                          <span>
+                            <span className="font-bold">{completed}</span>/{p.hours}h
+                            <span className="text-zinc-500 ml-1 text-xs">
+                              ({remainingDays} {language === 'val' ? 'dies' : 'días'})
+                            </span>
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center text-sm font-medium text-zinc-700">
                       <Calendar size={16} className="mr-2 text-zinc-400" />
@@ -1347,6 +1394,34 @@ export const Placements: React.FC = () => {
           }
         </div>
       </div>
+
+      {showHoursConfirm && pendingSubmissionData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowHoursConfirm(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">
+                {language === 'val' ? 'Diferència d\'hores' : 'Diferencia de horas'}
+              </h3>
+            </div>
+            <p className="text-zinc-600 mb-8 leading-relaxed">
+              {language === 'val' 
+                ? `Has introduït ${pendingSubmissionData.hours}h, però el calendari suma un total de ${getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours)}h. Vols guardar les hores manuals?` 
+                : `Has introducido ${pendingSubmissionData.hours}h, pero el calendario suma un total de ${getTotalHoursWithSchedule(formData.startDate, formData.endDate, formData.weeklySchedule, formData.dailyHours)}h. ¿Quieres guardar las horas manuales?`}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowHoursConfirm(false)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
+                {t('students.cancel')}
+              </button>
+              <button onClick={() => executeSubmission(pendingSubmissionData)} className="px-5 py-2.5 rounded-xl font-medium bg-amber-600 hover:bg-amber-700 text-white shadow-md transition-colors flex items-center">
+                {language === 'val' ? 'Sí, guardar' : 'Sí, guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deletingId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setDeletingId(null)}>
