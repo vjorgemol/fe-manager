@@ -58,8 +58,11 @@ Aquí es donde conectas a los alumnos con las empresas. Esta sección te permite
 *   **Buscador**: Puedes usar la barra de búsqueda principal para localizar rápidamente cualquier práctica por el nombre del alumno, la empresa o su localidad.
 
 ### Gestión de Documentación (Anexos)
-Lleva el control de los documentos oficiales (A1, A2, A3) directamente desde la ficha:
+Lleva el control de los documentos oficiales (A1, A2, A3 y A5) directamente desde la ficha:
 *   **Subida de PDFs**: Adjunta los documentos escaneados o firmados digitalmente.
+*   **Lectura Automática (Anexos A3 y A5)**: Al subir estos anexos, el sistema intenta procesarlos automáticamente:
+    *   **Anexo A3**: Extrae los datos del instructor (Nombre, DNI y Email) para avisarte y sincronizarlos con la empresa si no coinciden.
+    *   **Anexo A5**: Extrae el NIA del alumno para renombrar el archivo automáticamente con el formato oficial (ej. `1234567_A51_2526.pdf`).
 *   **Descarga**: Pulsa sobre el icono de un documento subido para descargarlo.
 *   **Aviso de Firma (Anexo A3)**: Si el alumno aún no ha entregado el Anexo A3, puedes hacer clic en su botón gris para generar automáticamente un correo de recordatorio solicitando la firma. *(Importante: El archivo PDF deberás adjuntarlo tú manualmente en tu cliente de correo)*.
 *   **Control Global**: Marca la casilla "Firma" para llevar un registro rápido de si todos los documentos están ya debidamente firmados.
