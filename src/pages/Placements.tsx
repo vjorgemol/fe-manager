@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Minus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud, Info, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Trash2, Calendar, Clock, ArrowRight, Edit, Printer, Download, Mail, UserCheck, Search, FileText, CheckCircle2, AlertCircle, FileCheck, UploadCloud, Info, AlertTriangle, Archive } from 'lucide-react';
 import type { PlacementStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es, ca } from 'date-fns/locale';
 import { useLanguage } from '../context/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export const Placements: React.FC = () => {
   const { placements, students, companies, teachers, schoolName, academicYear, tutorName, tutorEmail, addPlacement, deletePlacement, updatePlacement, updateCompany } = useData();
@@ -602,6 +604,59 @@ export const Placements: React.FC = () => {
     setPendingImport(null);
   };
 
+  const exportAllAnnexes = async () => {
+    if (placements.length === 0) return;
+    
+    let hasFiles = false;
+    const zip = new JSZip();
+
+    placements.forEach(p => {
+      const student = students.find(s => s.id === p.studentId);
+      if (!student) return;
+
+      const folderName = `${student.lastName.replace(/\\s+/g, '_')}_${student.firstName.replace(/\\s+/g, '_')}`;
+      const hasA1 = !!p.anexoA1;
+      const hasA2 = !!p.anexoA2;
+      const hasA3 = !!p.anexoA3;
+      const hasA5 = !!p.anexoA5;
+
+      if (hasA1 || hasA2 || hasA3 || hasA5) {
+        hasFiles = true;
+        const studentFolder = zip.folder(folderName);
+        if (!studentFolder) return;
+
+        const addPdfToZip = (base64Data: string, filename: string) => {
+          const base64Content = base64Data.split(',')[1] || base64Data;
+          studentFolder.file(filename, base64Content, { base64: true });
+        };
+
+        if (hasA1) addPdfToZip(p.anexoA1 as string, 'Anexo_A1.pdf');
+        if (hasA2) addPdfToZip(p.anexoA2 as string, 'Anexo_A2.pdf');
+        if (hasA3) addPdfToZip(p.anexoA3 as string, 'Anexo_A3.pdf');
+        if (hasA5) {
+          try {
+            const parsed = JSON.parse(p.anexoA5 as string);
+            if (parsed.name && parsed.data) {
+              addPdfToZip(parsed.data, parsed.name);
+            } else {
+              addPdfToZip(p.anexoA5 as string, 'Anexo_A5.pdf');
+            }
+          } catch (e) {
+            addPdfToZip(p.anexoA5 as string, 'Anexo_A5.pdf');
+          }
+        }
+      }
+    });
+
+    if (!hasFiles) {
+      alert(t('placements.exportAnnexesEmpty'));
+      return;
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, `anexos_formacion_${academicYear.replace('/', '_')}.zip`);
+  };
+
   const exportToCSV = () => {
     if (placements.length === 0) return;
     const headers = ['Alumno', 'Email Alumno', 'Teléfono Alumno', 'Profesor Responsable', 'Empresa', 'Localidad', 'Contacto Empresa', 'Email Empresa', 'Horas', 'Inicio', 'Fin', 'Estado'];
@@ -690,6 +745,10 @@ export const Placements: React.FC = () => {
           <button onClick={exportToCSV} className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm" title={t('placements.exportCsv')}>
             <Download size={18} className="sm:mr-2" />
             <span className="hidden sm:inline">{t('placements.exportCsv')}</span>
+          </button>
+          <button onClick={exportAllAnnexes} disabled={placements.length === 0} className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm" title={t('placements.exportAnnexes')}>
+            <Archive size={18} className="sm:mr-2" />
+            <span className="hidden sm:inline">{t('placements.exportAnnexes')}</span>
           </button>
           <button onClick={handleNotifyAll} disabled={placements.length === 0} className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm" title={t('placements.notify')}>
             <Mail size={18} className="sm:mr-2" />
