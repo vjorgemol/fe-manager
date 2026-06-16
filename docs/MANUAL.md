@@ -61,7 +61,7 @@ Aquí es donde conectas a los alumnos con las empresas. Esta sección te permite
 Lleva el control de los documentos oficiales (A1, A2, A3 y A5) directamente desde la ficha:
 *   **Subida de PDFs**: Adjunta los documentos escaneados o firmados digitalmente.
 *   **Lectura Automática (Anexos A3 y A5)**: Al subir estos anexos, el sistema intenta procesarlos automáticamente:
-    *   **Anexo A3**: Extrae los datos del instructor (Nombre, DNI y Email) para avisarte y sincronizarlos con la empresa si no coinciden.
+    *   **Anexo A3**: Lee el documento y detecta de forma automática la persona que firma como instructor/tutor de la empresa. Extrae sus datos (Nombre, DNI y Email) y los compara con la información actual registrada para esa empresa. Si hay alguna diferencia, el sistema te mostrará una ventana de confirmación para actualizar la ficha de la empresa con los nuevos datos del instructor automáticamente.
     *   **Anexo A5**: Extrae el NIA del alumno para renombrar el archivo automáticamente con el formato oficial (ej. `1234567_A51_2526.pdf`).
 *   **Descarga**: Pulsa sobre el icono de un documento subido para descargarlo.
 *   **Exportación Masiva**: Puedes descargar toda la documentación de las prácticas en un único archivo ZIP mediante el botón correspondiente. El ZIP contendrá una carpeta para cada alumno (nombrada como `Apellido_Nombre`) y dentro de ella todos sus anexos (A1, A2, A3 y A5) adjuntados.
