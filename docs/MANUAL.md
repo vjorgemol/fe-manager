@@ -64,6 +64,7 @@ Lleva el control de los documentos oficiales (A1, A2, A3 y A5) directamente desd
     *   **Anexo A3**: Extrae los datos del instructor (Nombre, DNI y Email) para avisarte y sincronizarlos con la empresa si no coinciden.
     *   **Anexo A5**: Extrae el NIA del alumno para renombrar el archivo automáticamente con el formato oficial (ej. `1234567_A51_2526.pdf`).
 *   **Descarga**: Pulsa sobre el icono de un documento subido para descargarlo.
+*   **Exportación Masiva**: Puedes descargar toda la documentación de las prácticas en un único archivo ZIP mediante el botón correspondiente. El ZIP contendrá una carpeta para cada alumno (nombrada como `Apellido_Nombre`) y dentro de ella todos sus anexos (A1, A2, A3 y A5) adjuntados.
 *   **Aviso de Firma (Anexo A3)**: Si el alumno aún no ha entregado el Anexo A3, puedes hacer clic en su botón gris para generar automáticamente un correo de recordatorio solicitando la firma. *(Importante: El archivo PDF deberás adjuntarlo tú manualmente en tu cliente de correo)*.
 *   **Control Global**: Marca la casilla "Firma" para llevar un registro rápido de si todos los documentos están ya debidamente firmados.
 
@@ -90,6 +91,9 @@ Esta variable es inteligente y se adapta según el contexto:
 
 ### Backup XML (Muy Importante)
 Aunque los datos se guardan automáticamente en tu equipo, te recomendamos descargar un **Backup XML** periódicamente desde Ajustes. Este archivo contiene **TODO** (alumnos con sus fotos, empresas, histórico de años anteriores, tus plantillas de email personalizadas y la configuración de horas) y te permite restaurar el sistema en otro ordenador sin perder nada.
+
+> [!WARNING]
+> **Exclusión de Anexos**: Para evitar archivos de copia de seguridad extremadamente pesados que saturen el sistema o bloqueen el navegador, el Backup XML **NO** incluye los documentos PDF adjuntos (anexos). Si deseas descargar la documentación completa de las prácticas, utiliza la opción de exportación masiva en ZIP desde la sección de Prácticas.
 
 ### Gestión de Profesores
 Añade a tus compañeros de departamento para poder asignarlos como tutores de seguimiento en las prácticas.
