@@ -409,7 +409,7 @@ export const Placements: React.FC = () => {
               });
               const data = await res.json();
               if (data.success && data.nia) {
-                const curso = formData.academicYear || academicYear || '25/26';
+                const curso = academicYear || '25/26';
                 const cursoFormat = curso.replace('/', '');
                 finalName = `${data.nia}_A51_${cursoFormat}.pdf`;
               }

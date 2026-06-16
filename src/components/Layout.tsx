@@ -103,12 +103,12 @@ export const Layout: React.FC = () => {
             <Menu size={24} />
           </button>
           <div className="flex-grow"></div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Language Selector */}
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as 'es' | 'val')}
-              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-2 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
               <option value="es">Castellano</option>
               <option value="val">Valencià</option>
@@ -119,7 +119,7 @@ export const Layout: React.FC = () => {
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-2 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
               <option value="25/26">{t('nav.academicYear')} 25/26</option>
               <option value="26/27">{t('nav.academicYear')} 26/27</option>
@@ -127,13 +127,13 @@ export const Layout: React.FC = () => {
               <option value="28/29">{t('nav.academicYear')} 28/29</option>
               <option value="29/30">{t('nav.academicYear')} 29/30</option>
             </select>
-            <div className="h-6 w-px bg-zinc-200"></div>
+            <div className="hidden sm:block h-6 w-px bg-zinc-200"></div>
             <input
               type="text"
               value={schoolName}
               onChange={(e) => setSchoolName(e.target.value)}
               placeholder={t('nav.schoolPlaceholder')}
-              className="text-sm font-medium text-zinc-600 bg-transparent border-none focus:ring-0 text-right outline-none hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
+              className="hidden sm:block text-sm font-medium text-zinc-600 bg-transparent border-none focus:ring-0 text-right outline-none hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
               title={t('nav.schoolTitle')}
             />
           </div>
