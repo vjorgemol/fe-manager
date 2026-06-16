@@ -202,6 +202,34 @@ app.post('/api/parse-a3', async (req, res) => {
   }
 });
 
+app.post('/api/parse-a5', async (req, res) => {
+  try {
+    const { pdfBase64 } = req.body;
+    if (!pdfBase64) return res.status(400).json({ error: 'No PDF provided' });
+
+    const base64Data = pdfBase64.split(',')[1] || pdfBase64;
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    const data = await pdfParse(buffer);
+    const text = data.text;
+
+    // Look for NIA: ########
+    const niaMatch = text.match(/NIA:\s*([0-9]{5,12})/i);
+    let nia = null;
+    if (niaMatch) {
+      nia = niaMatch[1].trim();
+    }
+
+    res.json({ 
+      success: true, 
+      nia
+    });
+  } catch (err) {
+    console.error('Error parsing A5:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- SETTINGS ---
 app.get('/api/settings', async (req, res) => {
   const rows = await query("SELECT key, value FROM settings WHERE key NOT IN ('adminPassword', 'jwtSecret', 'twoFactorSecret')");
@@ -339,8 +367,8 @@ app.post('/api/import', async (req, res) => {
     }
 
     for (const p of placements) {
-      await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, allSigned, a3EmailSent, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [p.id, p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status, p.academicYear, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null, p.anexoA1 || null, p.anexoA2 || null, p.anexoA3 || null, p.allSigned ? 1 : 0, p.a3EmailSent ? 1 : 0, p.a2Signed ? 1 : 0, p.a3Signed ? 1 : 0, p.trackingCount || 0, p.dailyHours !== undefined ? p.dailyHours : 4, p.excludedDates || '[]', p.weeklySchedule || '{}']);
+      await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, anexoA5, allSigned, a3EmailSent, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [p.id, p.studentId, p.companyId, p.hours, p.startDate, p.endDate, p.status, p.academicYear, p.startEmailSent ? 1 : 0, p.endEmailSent ? 1 : 0, p.teacherId || null, p.anexoA1 || null, p.anexoA2 || null, p.anexoA3 || null, p.anexoA5 || null, p.allSigned ? 1 : 0, p.a3EmailSent ? 1 : 0, p.a2Signed ? 1 : 0, p.a3Signed ? 1 : 0, p.trackingCount || 0, p.dailyHours !== undefined ? p.dailyHours : 4, p.excludedDates || '[]', p.weeklySchedule || '{}']);
     }
     
     if (teachers) {
@@ -435,16 +463,16 @@ app.get('/api/placements', async (req, res) => {
 });
 
 app.post('/api/placements', async (req, res) => {
-  const { id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, allSigned, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule } = req.body;
-  await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, allSigned, a3EmailSent, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-    [id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent ? 1 : 0, endEmailSent ? 1 : 0, teacherId || null, anexoA1 || null, anexoA2 || null, anexoA3 || null, allSigned ? 1 : 0, req.body.a3EmailSent ? 1 : 0, a2Signed ? 1 : 0, a3Signed ? 1 : 0, trackingCount || 0, dailyHours !== undefined ? dailyHours : 4, excludedDates || '[]', weeklySchedule || '{}']);
+  const { id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, anexoA5, allSigned, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule } = req.body;
+  await run(`INSERT INTO placements (id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, anexoA5, allSigned, a3EmailSent, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+    [id, studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent ? 1 : 0, endEmailSent ? 1 : 0, teacherId || null, anexoA1 || null, anexoA2 || null, anexoA3 || null, anexoA5 || null, allSigned ? 1 : 0, req.body.a3EmailSent ? 1 : 0, a2Signed ? 1 : 0, a3Signed ? 1 : 0, trackingCount || 0, dailyHours !== undefined ? dailyHours : 4, excludedDates || '[]', weeklySchedule || '{}']);
   res.json({ success: true });
 });
 
 app.put('/api/placements/:id', async (req, res) => {
-  const { studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, allSigned, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule } = req.body;
-  await run(`UPDATE placements SET studentId=?, companyId=?, hours=?, startDate=?, endDate=?, status=?, academicYear=?, startEmailSent=?, endEmailSent=?, teacherId=?, anexoA1=?, anexoA2=?, anexoA3=?, allSigned=?, a3EmailSent=?, a2Signed=?, a3Signed=?, trackingCount=?, dailyHours=?, excludedDates=?, weeklySchedule=? WHERE id=?`, 
-    [studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent ? 1 : 0, endEmailSent ? 1 : 0, teacherId || null, anexoA1 || null, anexoA2 || null, anexoA3 || null, allSigned ? 1 : 0, req.body.a3EmailSent ? 1 : 0, a2Signed ? 1 : 0, a3Signed ? 1 : 0, trackingCount || 0, dailyHours !== undefined ? dailyHours : 4, excludedDates || '[]', weeklySchedule || '{}', req.params.id]);
+  const { studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent, endEmailSent, teacherId, anexoA1, anexoA2, anexoA3, anexoA5, allSigned, a2Signed, a3Signed, trackingCount, dailyHours, excludedDates, weeklySchedule } = req.body;
+  await run(`UPDATE placements SET studentId=?, companyId=?, hours=?, startDate=?, endDate=?, status=?, academicYear=?, startEmailSent=?, endEmailSent=?, teacherId=?, anexoA1=?, anexoA2=?, anexoA3=?, anexoA5=?, allSigned=?, a3EmailSent=?, a2Signed=?, a3Signed=?, trackingCount=?, dailyHours=?, excludedDates=?, weeklySchedule=? WHERE id=?`, 
+    [studentId, companyId, hours, startDate, endDate, status, academicYear, startEmailSent ? 1 : 0, endEmailSent ? 1 : 0, teacherId || null, anexoA1 || null, anexoA2 || null, anexoA3 || null, anexoA5 || null, allSigned ? 1 : 0, req.body.a3EmailSent ? 1 : 0, a2Signed ? 1 : 0, a3Signed ? 1 : 0, trackingCount || 0, dailyHours !== undefined ? dailyHours : 4, excludedDates || '[]', weeklySchedule || '{}', req.params.id]);
   res.json({ success: true });
 });
 

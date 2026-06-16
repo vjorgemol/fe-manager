@@ -87,6 +87,9 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'anexoA3')) {
         db.run("ALTER TABLE placements ADD COLUMN anexoA3 TEXT");
       }
+      if (!columns.some(c => c.name === 'anexoA5')) {
+        db.run("ALTER TABLE placements ADD COLUMN anexoA5 TEXT");
+      }
       if (!columns.some(c => c.name === 'allSigned')) {
         db.run("ALTER TABLE placements ADD COLUMN allSigned INTEGER DEFAULT 0");
       }

@@ -40,6 +40,7 @@ export const Placements: React.FC = () => {
     anexoA1: '' as string | undefined,
     anexoA2: '' as string | undefined,
     anexoA3: '' as string | undefined,
+    anexoA5: '' as string | undefined,
     allSigned: false,
     dailyHours: 4,
     excludedDates: [] as string[],
@@ -218,6 +219,7 @@ export const Placements: React.FC = () => {
           anexoA1: placement.anexoA1 || '',
           anexoA2: placement.anexoA2 || '',
           anexoA3: placement.anexoA3 || '',
+          anexoA5: placement.anexoA5 || '',
           allSigned: !!placement.allSigned,
           dailyHours: currentDailyHours,
           excludedDates: excluded,
@@ -245,6 +247,7 @@ export const Placements: React.FC = () => {
         anexoA1: '',
         anexoA2: '',
         anexoA3: '',
+        anexoA5: '',
         allSigned: false,
         dailyHours: 4,
         excludedDates: [],
@@ -268,6 +271,7 @@ export const Placements: React.FC = () => {
         anexoA1: '',
         anexoA2: '',
         anexoA3: '',
+        anexoA5: '',
         allSigned: false,
         dailyHours: 4,
         excludedDates: [],
@@ -379,7 +383,7 @@ export const Placements: React.FC = () => {
     });
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'anexoA1' | 'anexoA2' | 'anexoA3') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'anexoA1' | 'anexoA2' | 'anexoA3' | 'anexoA5') => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type !== 'application/pdf') {
@@ -389,7 +393,34 @@ export const Placements: React.FC = () => {
       }
       try {
         const base64 = await fileToBase64(file);
-        setFormData(prev => ({ ...prev, [field]: base64 }));
+        let finalData = base64;
+
+        if (field === 'anexoA5') {
+          let finalName = file.name;
+          if (!/^\\d+_A51_\\d+(\\.pdf)?$/i.test(finalName)) {
+            try {
+              const res = await fetch('/api/parse-a5', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ pdfBase64: base64 })
+              });
+              const data = await res.json();
+              if (data.success && data.nia) {
+                const curso = formData.academicYear || academicYear || '25/26';
+                const cursoFormat = curso.replace('/', '');
+                finalName = `${data.nia}_A51_${cursoFormat}.pdf`;
+              }
+            } catch (err) {
+              console.error('Error al analizar A5:', err);
+            }
+          }
+          finalData = JSON.stringify({ name: finalName, data: base64 });
+        }
+
+        setFormData(prev => ({ ...prev, [field]: finalData }));
 
         if (field === 'anexoA3') {
           try {
@@ -537,6 +568,7 @@ export const Placements: React.FC = () => {
                   anexoA1: '',
                   anexoA2: '',
                   anexoA3: '',
+                  anexoA5: '',
                   allSigned: false,
                   a3EmailSent: false
                 });
@@ -1100,6 +1132,30 @@ export const Placements: React.FC = () => {
                   />
                 )}
               </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1 flex items-center justify-between">
+                  Anexo A5
+                  {formData.anexoA5 && <CheckCircle2 size={16} className="text-emerald-500" />}
+                </label>
+                {formData.anexoA5 ? (
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+                    <span className="text-sm text-emerald-700 font-medium flex items-center">
+                      <FileCheck size={16} className="mr-2" />
+                      {language === 'val' ? 'Document pujat' : 'Documento subido'}
+                    </span>
+                    <button type="button" onClick={() => setFormData({...formData, anexoA5: ''})} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title={language === 'val' ? 'Eliminar document' : 'Eliminar documento'}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
+                    onChange={e => handleFileChange(e, 'anexoA5')}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="md:col-span-3 flex items-center gap-2 mt-2">
@@ -1205,13 +1261,24 @@ export const Placements: React.FC = () => {
                     {[
                       { label: 'A1', file: p.anexoA1 },
                       { label: 'A2', file: p.anexoA2 },
-                      { label: 'A3', file: p.anexoA3 }
-                    ].map((anexo, i) => (
+                      { label: 'A3', file: p.anexoA3 },
+                      { label: 'A5', file: p.anexoA5 }
+                    ].map((anexo, i) => {
+                      let href = anexo.file;
+                      let downloadName = `Anexo_${anexo.label}_${student.lastName}.pdf`;
+                      if (anexo.file && anexo.file.startsWith('{')) {
+                        try {
+                          const parsed = JSON.parse(anexo.file);
+                          href = parsed.data;
+                          downloadName = parsed.name;
+                        } catch(e) {}
+                      }
+                      return (
                       <div key={i} className="group/doc relative">
-                        {anexo.file ? (
+                        {href ? (
                           <a 
-                            href={anexo.file} 
-                            download={`Anexo_${anexo.label}_${student.lastName}.pdf`}
+                            href={href} 
+                            download={downloadName}
                             className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 hover:bg-emerald-100 transition-colors"
                             title={language === 'val' ? `Descarregar ${anexo.label}` : `Descargar ${anexo.label}`}
                           >
@@ -1237,7 +1304,7 @@ export const Placements: React.FC = () => {
                         )}
                         <span className="text-[9px] font-bold text-zinc-500 mt-0.5 block text-center">{anexo.label}</span>
                       </div>
-                    ))}
+                    )})}
                     <div className="flex flex-col items-center">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${p.allSigned ? 'bg-primary-50 text-primary-600 border-primary-100' : 'bg-zinc-100 text-zinc-400 border-zinc-200'}`} title={p.allSigned ? (language === 'val' ? 'Signat' : 'Firmado') : (language === 'val' ? 'Pendent de signatura' : 'Pendiente de firma')}>
                         <FileCheck size={14} />

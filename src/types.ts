@@ -49,6 +49,7 @@ export interface Placement {
   anexoA1?: string;
   anexoA2?: string;
   anexoA3?: string;
+  anexoA5?: string;
   allSigned?: boolean;
   a3EmailSent?: boolean;
   a2Signed?: boolean;
