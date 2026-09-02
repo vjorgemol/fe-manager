@@ -351,6 +351,7 @@ export const Students: React.FC = () => {
           <input type="file" accept=".csv" ref={csvInputRef} className="hidden" onChange={handleCSVImport} />
           <button
             onClick={() => csvInputRef.current?.click()}
+            title={t('students.importAules')}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <UploadCloud size={20} className="sm:mr-2" />
