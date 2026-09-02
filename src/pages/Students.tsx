@@ -106,11 +106,11 @@ export const Students: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string;
-        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+        const rawText = (event.target?.result as string || '').replace(/^\uFEFF/, '');
+        const lines = rawText.split(/\r?\n/).filter(line => line.trim() !== '');
 
         if (lines.length < 2) {
-          setImportResult({ count: 0, skipped: 0, error: 'El archivo está vacío o solo contiene la cabecera.' });
+          setImportResult({ count: 0, skipped: 0, error: 'El archivo está vacío o no contiene suficientes datos.' });
           return;
         }
 
@@ -134,70 +134,142 @@ export const Students: React.FC = () => {
           return result;
         };
 
-        const header = lines[0];
-        const separator = header.includes(';') ? ';' : ',';
-        const headers = splitCSVLine(header, separator);
+        const cleanHeaderStr = (h: string) => (h || '').replace(/["'\r\n]/g, '').trim().toLowerCase();
 
-        // Mapeo dinámico de índices de columnas por nombre
-        const nameIdx = headers.findIndex(h => h.toLowerCase() === 'nombre');
-        const lastNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && !h.toLowerCase().includes('apellidos, nombre') && !h.toLowerCase().includes('apellidos,nombre'));
-        const combinedNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellidos, nombre') || h.toLowerCase().includes('apellidos y nombre') || h.toLowerCase().includes('apellidos,nombre') || h.toLowerCase() === 'apellidos, nombre');
-        const emailIdx = headers.findIndex(h => h.toLowerCase().includes('correo') || h.toLowerCase() === 'email' || h.toLowerCase().includes('email'));
-        const phoneIdx = headers.findIndex(h => h.toLowerCase().includes('teléfono') || h.toLowerCase() === 'telefono' || h.toLowerCase().includes('tfno'));
-        const photoIdx = headers.findIndex(h => h.toLowerCase().includes('foto') || h.toLowerCase().includes('image') || h.toLowerCase().includes('photo'));
-        const niaIdx = headers.findIndex(h => h.toLowerCase() === 'nia');
-        const dniIdx = headers.findIndex(h => h.toLowerCase() === 'dni');
-        const locationIdx = headers.findIndex(h => h.toLowerCase().includes('localidad') || h.toLowerCase().includes('poblacion') || h.toLowerCase().includes('población'));
-        const birthDateIdx = headers.findIndex(h => h.toLowerCase().includes('f. nacimiento') || h.toLowerCase().includes('nacimiento'));
+        // Buscar automáticamente la línea que contiene los encabezados de columna
+        let headerLineIdx = lines.findIndex(line => {
+          const clean = line.replace(/["'\r\n]/g, '').toLowerCase();
+          return (clean.includes('apellid') || clean.includes('nombre') || clean.includes('nom')) &&
+                 (clean.includes('email') || clean.includes('correo') || clean.includes('mail') || clean.includes('nia') || clean.includes('dni'));
+        });
 
-        const hasValidNameMapping = combinedNameIdx !== -1 || (nameIdx !== -1 && lastNameIdx !== -1);
+        if (headerLineIdx === -1) {
+          headerLineIdx = 0; // fallback a la primera línea
+        }
+
+        const headerLine = lines[headerLineIdx];
+        const semicolons = (headerLine.match(/;/g) || []).length;
+        const commas = (headerLine.match(/,/g) || []).length;
+        const tabs = (headerLine.match(/\t/g) || []).length;
+        let separator = ',';
+        if (semicolons > commas && semicolons > tabs) separator = ';';
+        else if (tabs > commas && tabs > semicolons) separator = '\t';
+
+        const headers = splitCSVLine(headerLine, separator);
+
+        // Mapeo dinámico de índices de columnas por nombre limpiando comillas y espacios
+        const nameIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c === 'nombre' || c === 'nom' || c === 'first name' || c === 'firstname';
+        });
+        
+        const lastNameIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return (c.includes('apellido') || c.includes('cognom') || c.includes('last name') || c.includes('lastname')) &&
+                 !c.includes('apellidos, nombre') && !c.includes('apellidos,nombre') && !c.includes('apellidos y nombre');
+        });
+        
+        const combinedNameIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return (c.includes('apellidos') && c.includes('nombre')) || (c.includes('cognoms') && c.includes('nom')) || c === 'alumno' || c === 'alumne' || c === 'alumno/a';
+        });
+        
+        const emailIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c.includes('correo') || c.includes('correu') || c.includes('email') || c.includes('mail') || c.includes('e-mail');
+        });
+        
+        const phoneIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c.includes('tel') || c.includes('tfno') || c.includes('móvil') || c.includes('movil') || c.includes('mòvil') || c.includes('phone');
+        });
+        
+        const photoIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c.includes('foto') || c.includes('image') || c.includes('photo');
+        });
+
+        const niaIdx = headers.findIndex(h => cleanHeaderStr(h) === 'nia');
+        const dniIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c === 'dni' || c === 'nif' || c === 'nie' || c.includes('documento') || c.includes('document');
+        });
+        
+        const locationIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c.includes('localidad') || c.includes('poblacion') || c.includes('población') || c.includes('població') || c.includes('municipi') || c.includes('ciudad');
+        });
+
+        const birthDateIdx = headers.findIndex(h => {
+          const c = cleanHeaderStr(h);
+          return c.includes('nacimiento') || c.includes('naixement') || c.includes('f. nac');
+        });
+
+        const hasValidNameMapping = combinedNameIdx !== -1 || (nameIdx !== -1 || lastNameIdx !== -1);
 
         if (!hasValidNameMapping || emailIdx === -1) {
-          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener al menos Nombre/Apellidos (o "Apellidos, Nombre") y Email.' });
+          setImportResult({ 
+            count: 0, 
+            skipped: 0, 
+            error: 'Formato no reconocido. El CSV debe tener al menos Nombre/Apellidos (o "Apellidos, Nombre") y Correo/Email.' 
+          });
           return;
         }
 
         const toImport: any[] = [];
         let skipped = 0;
 
-        // Procesar cada línea de datos
-        for (let i = 1; i < lines.length; i++) {
+        // Procesar las líneas de datos a partir de headerLineIdx + 1
+        for (let i = headerLineIdx + 1; i < lines.length; i++) {
           const values = splitCSVLine(lines[i], separator);
           if (values.length < 2) continue;
+
+          const cleanVal = (val: string) => (val || '').replace(/^["']|["']$/g, '').trim();
 
           let firstName = '';
           let lastName = '';
 
           if (combinedNameIdx !== -1 && values[combinedNameIdx]) {
-            const rawCombined = values[combinedNameIdx];
+            const rawCombined = cleanVal(values[combinedNameIdx]);
             if (rawCombined.includes(',')) {
               const parts = rawCombined.split(',');
               lastName = parts[0].trim();
               firstName = parts.slice(1).join(',').trim();
             } else {
-              firstName = rawCombined.trim();
+              firstName = rawCombined;
             }
           } else {
-            firstName = nameIdx !== -1 ? (values[nameIdx] || '').trim() : '';
-            lastName = lastNameIdx !== -1 ? (values[lastNameIdx] || '').trim() : '';
+            firstName = nameIdx !== -1 ? cleanVal(values[nameIdx]) : '';
+            lastName = lastNameIdx !== -1 ? cleanVal(values[lastNameIdx]) : '';
           }
 
-          const email = emailIdx !== -1 ? (values[emailIdx] || '').trim() : '';
-          const phone = phoneIdx !== -1 ? (values[phoneIdx] || '').trim() : '';
-          const photoBase64 = photoIdx !== -1 ? (values[photoIdx] || '').trim() : '';
+          const email = emailIdx !== -1 ? cleanVal(values[emailIdx]) : '';
+          const phone = phoneIdx !== -1 ? cleanVal(values[phoneIdx]) : '';
+          const photoBase64 = photoIdx !== -1 ? cleanVal(values[photoIdx]) : '';
 
-          // Recopilar metadatos adicionales (Telemaco u otros) para guardarlos en notas
+          // Recopilar metadatos adicionales para guardarlos en notas
           const extraInfo: string[] = [];
-          if (niaIdx !== -1 && values[niaIdx]) extraInfo.push(`NIA: ${values[niaIdx].trim()}`);
-          if (dniIdx !== -1 && values[dniIdx]) extraInfo.push(`DNI: ${values[dniIdx].trim()}`);
-          if (locationIdx !== -1 && values[locationIdx]) extraInfo.push(`Localidad: ${values[locationIdx].trim()}`);
-          if (birthDateIdx !== -1 && values[birthDateIdx]) extraInfo.push(`F. Nacimiento: ${values[birthDateIdx].trim()}`);
+          if (niaIdx !== -1 && values[niaIdx]) {
+            const v = cleanVal(values[niaIdx]);
+            if (v) extraInfo.push(`NIA: ${v}`);
+          }
+          if (dniIdx !== -1 && values[dniIdx]) {
+            const v = cleanVal(values[dniIdx]);
+            if (v) extraInfo.push(`DNI: ${v}`);
+          }
+          if (locationIdx !== -1 && values[locationIdx]) {
+            const v = cleanVal(values[locationIdx]);
+            if (v) extraInfo.push(`Localidad: ${v}`);
+          }
+          if (birthDateIdx !== -1 && values[birthDateIdx]) {
+            const v = cleanVal(values[birthDateIdx]);
+            if (v) extraInfo.push(`F. Nacimiento: ${v}`);
+          }
           
           const notes = extraInfo.join(' | ');
 
           // Solo procesar filas con al menos nombre o apellido y un email válido
           if ((firstName || lastName) && email && email.includes('@')) {
-            // Comprobar duplicados por email antes de añadir a la lista pendiente
             if (!students.some(s => s.email.toLowerCase() === email.toLowerCase())) {
               toImport.push({ firstName, lastName, email, phone, photoBase64, notes });
             } else {
