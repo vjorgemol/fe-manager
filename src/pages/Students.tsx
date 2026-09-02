@@ -140,13 +140,20 @@ export const Students: React.FC = () => {
 
         // Mapeo dinámico de índices de columnas por nombre
         const nameIdx = headers.findIndex(h => h.toLowerCase() === 'nombre');
-        const lastNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellido'));
-        const emailIdx = headers.findIndex(h => h.toLowerCase().includes('correo') || h.toLowerCase() === 'email');
-        const phoneIdx = headers.findIndex(h => h.toLowerCase().includes('teléfono') || h.toLowerCase() === 'telefono');
+        const lastNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && !h.toLowerCase().includes('apellidos, nombre') && !h.toLowerCase().includes('apellidos,nombre'));
+        const combinedNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellidos, nombre') || h.toLowerCase().includes('apellidos y nombre') || h.toLowerCase().includes('apellidos,nombre') || h.toLowerCase() === 'apellidos, nombre');
+        const emailIdx = headers.findIndex(h => h.toLowerCase().includes('correo') || h.toLowerCase() === 'email' || h.toLowerCase().includes('email'));
+        const phoneIdx = headers.findIndex(h => h.toLowerCase().includes('teléfono') || h.toLowerCase() === 'telefono' || h.toLowerCase().includes('tfno'));
         const photoIdx = headers.findIndex(h => h.toLowerCase().includes('foto') || h.toLowerCase().includes('image') || h.toLowerCase().includes('photo'));
+        const niaIdx = headers.findIndex(h => h.toLowerCase() === 'nia');
+        const dniIdx = headers.findIndex(h => h.toLowerCase() === 'dni');
+        const locationIdx = headers.findIndex(h => h.toLowerCase().includes('localidad') || h.toLowerCase().includes('poblacion') || h.toLowerCase().includes('población'));
+        const birthDateIdx = headers.findIndex(h => h.toLowerCase().includes('f. nacimiento') || h.toLowerCase().includes('nacimiento'));
 
-        if (nameIdx === -1 || lastNameIdx === -1 || emailIdx === -1) {
-          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener: Nombre, Apellidos, Email.' });
+        const hasValidNameMapping = combinedNameIdx !== -1 || (nameIdx !== -1 && lastNameIdx !== -1);
+
+        if (!hasValidNameMapping || emailIdx === -1) {
+          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener al menos Nombre/Apellidos (o "Apellidos, Nombre") y Email.' });
           return;
         }
 
@@ -156,18 +163,43 @@ export const Students: React.FC = () => {
         // Procesar cada línea de datos
         for (let i = 1; i < lines.length; i++) {
           const values = splitCSVLine(lines[i], separator);
-          if (values.length < 3) continue;
+          if (values.length < 2) continue;
 
-          const firstName = values[nameIdx];
-          const lastName = values[lastNameIdx];
-          const email = values[emailIdx];
-          const phone = phoneIdx !== -1 ? values[phoneIdx] : '';
-          const photoBase64 = photoIdx !== -1 ? values[photoIdx] : '';
+          let firstName = '';
+          let lastName = '';
 
-          if (firstName && lastName && email) {
+          if (combinedNameIdx !== -1 && values[combinedNameIdx]) {
+            const rawCombined = values[combinedNameIdx];
+            if (rawCombined.includes(',')) {
+              const parts = rawCombined.split(',');
+              lastName = parts[0].trim();
+              firstName = parts.slice(1).join(',').trim();
+            } else {
+              firstName = rawCombined.trim();
+            }
+          } else {
+            firstName = nameIdx !== -1 ? (values[nameIdx] || '').trim() : '';
+            lastName = lastNameIdx !== -1 ? (values[lastNameIdx] || '').trim() : '';
+          }
+
+          const email = emailIdx !== -1 ? (values[emailIdx] || '').trim() : '';
+          const phone = phoneIdx !== -1 ? (values[phoneIdx] || '').trim() : '';
+          const photoBase64 = photoIdx !== -1 ? (values[photoIdx] || '').trim() : '';
+
+          // Recopilar metadatos adicionales (Telemaco u otros) para guardarlos en notas
+          const extraInfo: string[] = [];
+          if (niaIdx !== -1 && values[niaIdx]) extraInfo.push(`NIA: ${values[niaIdx].trim()}`);
+          if (dniIdx !== -1 && values[dniIdx]) extraInfo.push(`DNI: ${values[dniIdx].trim()}`);
+          if (locationIdx !== -1 && values[locationIdx]) extraInfo.push(`Localidad: ${values[locationIdx].trim()}`);
+          if (birthDateIdx !== -1 && values[birthDateIdx]) extraInfo.push(`F. Nacimiento: ${values[birthDateIdx].trim()}`);
+          
+          const notes = extraInfo.join(' | ');
+
+          // Solo procesar filas con al menos nombre o apellido y un email válido
+          if ((firstName || lastName) && email && email.includes('@')) {
             // Comprobar duplicados por email antes de añadir a la lista pendiente
             if (!students.some(s => s.email.toLowerCase() === email.toLowerCase())) {
-              toImport.push({ firstName, lastName, email, phone: phone || '', photoBase64: photoBase64 || '' });
+              toImport.push({ firstName, lastName, email, phone, photoBase64, notes });
             } else {
               skipped++;
             }
