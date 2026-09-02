@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Search, Edit, Mail, X, UploadCloud, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { Plus, Minus, Trash2, Search, Edit, Mail, X, UploadCloud, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import type { Student } from '../types';
 
 /**
@@ -11,6 +12,7 @@ import type { Student } from '../types';
 export const Students: React.FC = () => {
   // Acceso al estado global de la aplicación a través del contexto
   const { students, addStudent, deleteStudent, updateStudent, academicYear } = useData();
+  const { t, language } = useLanguage();
 
   // Estados locales para la gestión de la interfaz
   const [isAdding, setIsAdding] = useState(false);
@@ -19,8 +21,18 @@ export const Students: React.FC = () => {
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
+
+  /**
+   * Resetea el formulario y limpia estados de edición.
+   */
+  const resetForm = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('edit');
+    params.delete('new');
+    setSearchParams(params);
+  };
 
   // Estados para la lógica de importación/exportación
   const [importResult, setImportResult] = useState<{ count: number, skipped: number, error?: string } | null>(null);
@@ -29,6 +41,55 @@ export const Students: React.FC = () => {
 
   // Referencia al input de archivo oculto
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleReset = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.path === '/students') {
+        resetForm();
+      }
+    };
+    window.addEventListener('breadcrumb-click', handleReset);
+    return () => {
+      window.removeEventListener('breadcrumb-click', handleReset);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    };
+  }, [searchParams]);
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    const isNew = searchParams.get('new') === 'true';
+
+    if (editId) {
+      const student = students.find(s => s.id === editId);
+      if (student) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFormData({
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+          phone: student.phone || '',
+          photoBase64: student.photoBase64 || '',
+          notes: student.notes || ''
+        });
+        setEditingId(editId);
+        setIsAdding(true);
+        window.dispatchEvent(new CustomEvent('editing-element', { 
+          detail: { name: `Editar: ${student.firstName} ${student.lastName}` } 
+        }));
+      }
+    } else if (isNew) {
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
+      setEditingId(null);
+      setIsAdding(true);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: 'Nuevo Alumno' } }));
+    } else {
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
+      setEditingId(null);
+      setIsAdding(false);
+      window.dispatchEvent(new CustomEvent('editing-element', { detail: { name: null } }));
+    }
+  }, [searchParams, students]);
 
   /**
    * Procesa la lectura del archivo CSV seleccionado por el usuario.
@@ -79,13 +140,20 @@ export const Students: React.FC = () => {
 
         // Mapeo dinámico de índices de columnas por nombre
         const nameIdx = headers.findIndex(h => h.toLowerCase() === 'nombre');
-        const lastNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellido'));
-        const emailIdx = headers.findIndex(h => h.toLowerCase().includes('correo') || h.toLowerCase() === 'email');
-        const phoneIdx = headers.findIndex(h => h.toLowerCase().includes('teléfono') || h.toLowerCase() === 'telefono');
+        const lastNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && !h.toLowerCase().includes('apellidos, nombre') && !h.toLowerCase().includes('apellidos,nombre'));
+        const combinedNameIdx = headers.findIndex(h => h.toLowerCase().includes('apellidos, nombre') || h.toLowerCase().includes('apellidos y nombre') || h.toLowerCase().includes('apellidos,nombre') || h.toLowerCase() === 'apellidos, nombre');
+        const emailIdx = headers.findIndex(h => h.toLowerCase().includes('correo') || h.toLowerCase() === 'email' || h.toLowerCase().includes('email'));
+        const phoneIdx = headers.findIndex(h => h.toLowerCase().includes('teléfono') || h.toLowerCase() === 'telefono' || h.toLowerCase().includes('tfno'));
         const photoIdx = headers.findIndex(h => h.toLowerCase().includes('foto') || h.toLowerCase().includes('image') || h.toLowerCase().includes('photo'));
+        const niaIdx = headers.findIndex(h => h.toLowerCase() === 'nia');
+        const dniIdx = headers.findIndex(h => h.toLowerCase() === 'dni');
+        const locationIdx = headers.findIndex(h => h.toLowerCase().includes('localidad') || h.toLowerCase().includes('poblacion') || h.toLowerCase().includes('población'));
+        const birthDateIdx = headers.findIndex(h => h.toLowerCase().includes('f. nacimiento') || h.toLowerCase().includes('nacimiento'));
 
-        if (nameIdx === -1 || lastNameIdx === -1 || emailIdx === -1) {
-          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener: Nombre, Apellidos, Email.' });
+        const hasValidNameMapping = combinedNameIdx !== -1 || (nameIdx !== -1 && lastNameIdx !== -1);
+
+        if (!hasValidNameMapping || emailIdx === -1) {
+          setImportResult({ count: 0, skipped: 0, error: 'Formato no reconocido. El CSV debe tener al menos Nombre/Apellidos (o "Apellidos, Nombre") y Email.' });
           return;
         }
 
@@ -95,18 +163,43 @@ export const Students: React.FC = () => {
         // Procesar cada línea de datos
         for (let i = 1; i < lines.length; i++) {
           const values = splitCSVLine(lines[i], separator);
-          if (values.length < 3) continue;
+          if (values.length < 2) continue;
 
-          const firstName = values[nameIdx];
-          const lastName = values[lastNameIdx];
-          const email = values[emailIdx];
-          const phone = phoneIdx !== -1 ? values[phoneIdx] : '';
-          const photoBase64 = photoIdx !== -1 ? values[photoIdx] : '';
+          let firstName = '';
+          let lastName = '';
 
-          if (firstName && lastName && email) {
+          if (combinedNameIdx !== -1 && values[combinedNameIdx]) {
+            const rawCombined = values[combinedNameIdx];
+            if (rawCombined.includes(',')) {
+              const parts = rawCombined.split(',');
+              lastName = parts[0].trim();
+              firstName = parts.slice(1).join(',').trim();
+            } else {
+              firstName = rawCombined.trim();
+            }
+          } else {
+            firstName = nameIdx !== -1 ? (values[nameIdx] || '').trim() : '';
+            lastName = lastNameIdx !== -1 ? (values[lastNameIdx] || '').trim() : '';
+          }
+
+          const email = emailIdx !== -1 ? (values[emailIdx] || '').trim() : '';
+          const phone = phoneIdx !== -1 ? (values[phoneIdx] || '').trim() : '';
+          const photoBase64 = photoIdx !== -1 ? (values[photoIdx] || '').trim() : '';
+
+          // Recopilar metadatos adicionales (Telemaco u otros) para guardarlos en notas
+          const extraInfo: string[] = [];
+          if (niaIdx !== -1 && values[niaIdx]) extraInfo.push(`NIA: ${values[niaIdx].trim()}`);
+          if (dniIdx !== -1 && values[dniIdx]) extraInfo.push(`DNI: ${values[dniIdx].trim()}`);
+          if (locationIdx !== -1 && values[locationIdx]) extraInfo.push(`Localidad: ${values[locationIdx].trim()}`);
+          if (birthDateIdx !== -1 && values[birthDateIdx]) extraInfo.push(`F. Nacimiento: ${values[birthDateIdx].trim()}`);
+          
+          const notes = extraInfo.join(' | ');
+
+          // Solo procesar filas con al menos nombre o apellido y un email válido
+          if ((firstName || lastName) && email && email.includes('@')) {
             // Comprobar duplicados por email antes de añadir a la lista pendiente
             if (!students.some(s => s.email.toLowerCase() === email.toLowerCase())) {
-              toImport.push({ firstName, lastName, email, phone: phone || '', photoBase64: photoBase64 || '' });
+              toImport.push({ firstName, lastName, email, phone, photoBase64, notes });
             } else {
               skipped++;
             }
@@ -227,21 +320,15 @@ export const Students: React.FC = () => {
    * Prepara el formulario para editar un alumno existente.
    */
   const handleEdit = (student: any) => {
-    setFormData({ firstName: student.firstName, lastName: student.lastName, email: student.email, phone: student.phone || '', photoBase64: student.photoBase64 || '', notes: student.notes || '' });
-    setEditingId(student.id);
-    setIsAdding(true);
+    const params = new URLSearchParams(searchParams);
+    params.set('edit', student.id);
+    params.delete('new');
+    setSearchParams(params);
     // Scroll suave hacia arriba para ver el formulario
     document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  /**
-   * Resetea el formulario y limpia estados de edición.
-   */
-  const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', email: '', phone: '', photoBase64: '', notes: '' });
-    setEditingId(null);
-    setIsAdding(false);
-  };
+
 
   // Filtrado y ordenación de la lista mostrada en tiempo real
   const filtered = students.filter(s =>
@@ -254,10 +341,10 @@ export const Students: React.FC = () => {
       <div className="flex justify-between items-end">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">Alumnos</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight">{t('students.title')}</h2>
             <span className="bg-primary-100 text-primary-700 text-sm font-semibold px-3 py-1 rounded-full">{students.length}</span>
           </div>
-          <p className="text-zinc-500 mt-2">Gestiona el listado de alumnos para la FE.</p>
+          <p className="text-zinc-500 mt-2">{t('students.desc')}</p>
         </div>
         <div className="flex gap-3">
           {/* Input de archivo oculto activado por el botón */}
@@ -267,27 +354,38 @@ export const Students: React.FC = () => {
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <UploadCloud size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">Importar Aules/FE Connect</span>
+            <span className="hidden sm:inline">{t('students.importAules')}</span>
           </button>
           <button
             onClick={() => setShowExportOptions(true)}
             className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm"
           >
             <Download size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">Exportar CSV</span>
+            <span className="hidden sm:inline">{t('students.exportCsv')}</span>
           </button>
           <button
             onClick={() => {
               if (isAdding) resetForm();
               else {
-                setIsAdding(true);
+                const params = new URLSearchParams(searchParams);
+                params.set('new', 'true');
+                params.delete('edit');
+                setSearchParams(params);
                 document.getElementById('main-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm shadow-primary-500/20"
+            className={`p-2.5 sm:px-5 sm:py-2.5 rounded-xl font-medium flex items-center transition-colors shadow-sm ${
+              isAdding 
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20' 
+                : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/20'
+            }`}
           >
-            <Plus size={20} className="sm:mr-2" />
-            <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Añadir Alumno'}</span>
+            {isAdding ? (
+              <Minus size={20} className="sm:mr-2" />
+            ) : (
+              <Plus size={20} className="sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">{isAdding ? t('students.cancel') : t('students.newStudent')}</span>
           </button>
         </div>
       </div>
@@ -295,43 +393,43 @@ export const Students: React.FC = () => {
       {/* Formulario de Alta/Edición */}
       {isAdding && (
         <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm animate-in slide-in-from-top-4 duration-300">
-          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? 'Editar Alumno' : 'Nuevo Alumno'}</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 mb-4">{editingId ? t('students.editStudent') : t('students.newStudent')}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.name')}</label>
               <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Apellidos</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.lastname')}</label>
               <input required type="text" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.email')}</label>
               <input required type="email" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Teléfono Móvil</label>
-              <input type="tel" placeholder="Opcional" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.phone')}</label>
+              <input type="tel" placeholder={language === 'val' ? 'Opcional' : 'Opcional'} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Foto del Alumno (Opcional)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.photo')}</label>
               <div className="flex items-center gap-4">
                 {formData.photoBase64 && <img src={formData.photoBase64} alt="Preview" className="w-12 h-12 rounded-full object-cover border border-zinc-200 shadow-sm" />}
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer" />
               </div>
             </div>
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Notas / Indicaciones (Opcional)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">{t('students.form.notes')}</label>
               <textarea
                 rows={3}
-                placeholder="Añade cualquier observación relevante sobre el alumno..."
+                placeholder={t('students.form.notesPlaceholder')}
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-y"
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
             <div className="md:col-span-3 flex justify-end mt-2">
-              <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">{editingId ? 'Actualizar' : 'Guardar'}</button>
+              <button type="submit" className="bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-2 rounded-xl font-medium transition-colors">{editingId ? t('students.form.update') : t('students.save')}</button>
             </div>
           </form>
         </div>
@@ -343,7 +441,7 @@ export const Students: React.FC = () => {
         <div className="p-4 border-b border-zinc-100 flex items-center bg-zinc-50/50">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-            <input type="text" placeholder="Buscar alumno..." className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none" value={search} onChange={e => setSearch(e.target.value)} />
+            <input type="text" placeholder={t('students.searchPlaceholder')} className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
 
@@ -352,28 +450,48 @@ export const Students: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-zinc-50/50 border-b border-zinc-100">
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Nombre Completo</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Acciones</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('students.form.fullName')}</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('students.form.email')}</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">{t('students.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.length === 0 ? (
-                <tr><td colSpan={3} className="px-6 py-8 text-center text-zinc-500">No se encontraron alumnos.</td></tr>
+                <tr><td colSpan={3} className="px-6 py-8 text-center text-zinc-500">{t('students.noStudents')}</td></tr>
               ) : (
                 filtered.map(s => (
-                  <tr key={s.id} className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" onDoubleClick={() => setViewingStudent(s as Student)}>
+                  <tr 
+                     key={s.id} 
+                     className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" 
+                     onClick={() => handleEdit(s)}
+                     onDoubleClick={(e) => { e.stopPropagation(); setViewingStudent(s as Student); }}
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {s.photoBase64 ? <img src={s.photoBase64} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-200 shadow-sm" /> : <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs uppercase shadow-sm">{s.firstName.charAt(0)}{s.lastName.charAt(0)}</div>}
+                        <div 
+                          className="cursor-pointer transition-transform hover:scale-105 shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingStudent(s as Student);
+                          }}
+                          title={t('students.details.view')}
+                        >
+                          {s.photoBase64 ? (
+                            <img src={s.photoBase64} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-200 shadow-sm" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
+                              {s.firstName.charAt(0)}{s.lastName.charAt(0)}
+                            </div>
+                          )}
+                        </div>
                         <div className="font-medium text-zinc-900">{s.lastName}, {s.firstName}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-zinc-500">{s.email}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEdit(s)} title="Editar" className="p-2 text-zinc-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"><Edit size={18} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(s.id); }} title="Eliminar" className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEdit(s)} title={t('students.details.edit')} className="p-2 text-zinc-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"><Edit size={18} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeletingId(s.id); }} title={t('students.delete.title')} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -386,12 +504,32 @@ export const Students: React.FC = () => {
         {/* Vista de Tarjetas (Mobile) */}
         <div className="md:hidden divide-y divide-zinc-100">
           {filtered.length === 0 ? (
-            <div className="px-6 py-8 text-center text-zinc-500">No se encontraron alumnos.</div>
+            <div className="px-6 py-8 text-center text-zinc-500">{t('students.noStudents')}</div>
           ) : (
             filtered.map(s => (
-              <div key={s.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors" onClick={() => setViewingStudent(s as Student)}>
+              <div 
+                key={s.id} 
+                className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors cursor-pointer" 
+                onClick={() => handleEdit(s)}
+                onDoubleClick={(e) => { e.stopPropagation(); setViewingStudent(s as Student); }}
+              >
                 <div className="flex items-center gap-3">
-                  {s.photoBase64 ? <img src={s.photoBase64} alt="" className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm" /> : <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm uppercase shadow-sm">{s.firstName.charAt(0)}{s.lastName.charAt(0)}</div>}
+                  <div 
+                    className="cursor-pointer transition-transform hover:scale-105 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setViewingStudent(s as Student);
+                    }}
+                    title={t('students.details.view')}
+                  >
+                    {s.photoBase64 ? (
+                      <img src={s.photoBase64} alt="" className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                        {s.firstName.charAt(0)}{s.lastName.charAt(0)}
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <div className="font-bold text-zinc-900 leading-tight">{s.lastName}, {s.firstName}</div>
                     <div className="text-xs text-zinc-500 mt-0.5">{s.email}</div>
@@ -419,14 +557,14 @@ export const Students: React.FC = () => {
               {viewingStudent.phone && <p className="text-zinc-500 font-medium mt-1 flex items-center justify-center gap-2"><span className="text-zinc-400">Tel:</span><a href={`tel:${viewingStudent.phone}`} className="text-primary-600 hover:underline">{viewingStudent.phone}</a></p>}
               {viewingStudent.notes && (
                 <div className="mt-4 w-full text-left bg-amber-50 border border-amber-100 rounded-xl p-3">
-                  <span className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Notas</span>
+                  <span className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">{t('students.form.notes')}</span>
                   <p className="text-sm text-amber-900 whitespace-pre-wrap">{viewingStudent.notes}</p>
                 </div>
               )}
             </div>
             <div className="p-6 bg-zinc-50/50 flex flex-col gap-3">
-              <a href={`mailto:${viewingStudent.email}`} className="w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3.5 rounded-xl font-medium flex items-center justify-center shadow-md"><Mail size={20} className="mr-2" /> Enviar Correo</a>
-              <button onClick={() => { setViewingStudent(null); handleEdit(viewingStudent); }} className="w-full bg-white border-2 border-zinc-200 hover:border-zinc-300 text-zinc-700 px-5 py-3.5 rounded-xl font-medium flex items-center justify-center"><Edit size={20} className="mr-2" /> Editar Datos</button>
+              <a href={`mailto:${viewingStudent.email}`} className="w-full bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3.5 rounded-xl font-medium flex items-center justify-center shadow-md"><Mail size={20} className="mr-2" /> {t('students.details.sendEmail')}</a>
+              <button onClick={() => { setViewingStudent(null); handleEdit(viewingStudent); }} className="w-full bg-white border-2 border-zinc-200 hover:border-zinc-300 text-zinc-700 px-5 py-3.5 rounded-xl font-medium flex items-center justify-center"><Edit size={20} className="mr-2" /> {t('students.details.edit')}</button>
             </div>
           </div>
         </div>
@@ -438,12 +576,12 @@ export const Students: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0"><Trash2 size={24} /></div>
-              <h3 className="text-xl font-bold text-zinc-900">Eliminar alumno</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('students.delete.title')}</h3>
             </div>
-            <p className="text-zinc-600 mb-8 leading-relaxed">¿Estás seguro de que deseas eliminar este alumno? Esta acción no se puede deshacer.</p>
+            <p className="text-zinc-600 mb-8 leading-relaxed">{t('students.delete.desc')}</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
-              <button onClick={() => { deleteStudent(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md flex items-center">Sí, eliminar</button>
+              <button onClick={() => setDeletingId(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">{t('students.cancel')}</button>
+              <button onClick={() => { deleteStudent(deletingId); setDeletingId(null); }} className="px-5 py-2.5 rounded-xl font-medium bg-red-600 hover:bg-red-700 text-white shadow-md flex items-center">{t('students.delete.confirm')}</button>
             </div>
           </div>
         </div>
@@ -455,18 +593,18 @@ export const Students: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0"><UploadCloud size={24} /></div>
-              <h3 className="text-xl font-bold text-zinc-900">Confirmar importación</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('students.import.confirmTitle')}</h3>
             </div>
             <div className="space-y-4 mb-8">
-              <p className="text-zinc-600 leading-relaxed">Se han analizado los datos del archivo y esto es lo que se va a procesar:</p>
+              <p className="text-zinc-600 leading-relaxed">{t('students.import.confirmDesc')}</p>
               <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2">
-                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">Alumnos nuevos:</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.students.length}</span></div>
-                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">Ya registrados (se omitirán):</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
+                <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('students.import.newStudents')}</span><span className="font-bold text-zinc-900 text-lg">{pendingImport.students.length}</span></div>
+                {pendingImport.skipped > 0 && <div className="flex justify-between items-center border-t border-zinc-200 pt-2"><span className="text-zinc-500 text-sm">{t('students.import.skipped')}</span><span className="font-medium text-zinc-400">{pendingImport.skipped}</span></div>}
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">Cancelar</button>
-              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">Sí, importar todo</button>
+              <button onClick={() => setPendingImport(null)} className="px-5 py-2.5 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">{t('students.cancel')}</button>
+              <button onClick={confirmImport} className="px-6 py-2.5 rounded-xl font-medium bg-primary-600 hover:bg-primary-700 text-white shadow-md transition-colors">{t('students.import.confirmButton')}</button>
             </div>
           </div>
         </div>
@@ -480,17 +618,17 @@ export const Students: React.FC = () => {
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${importResult.error ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
                 {importResult.error ? <AlertTriangle size={24} /> : <CheckCircle2 size={24} />}
               </div>
-              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? 'Error en la importación' : 'Importación completada'}</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{importResult.error ? t('students.import.resultErrorTitle') : t('students.import.resultSuccessTitle')}</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
               {importResult.error || (
                 <>
-                  Se han importado <strong>{importResult.count}</strong> {importResult.count === 1 ? 'alumno' : 'alumnos'} correctamente.
-                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">({importResult.skipped} omitidos por estar ya registrados)</span>}
+                  {t('students.import.resultSuccessDesc', { count: importResult.count })}
+                  {importResult.skipped > 0 && <span className="block mt-2 text-zinc-500 text-sm italic">{t('students.import.resultSkipped', { skipped: importResult.skipped })}</span>}
                 </>
               )}
             </p>
-            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">Entendido</button></div>
+            <div className="flex justify-end"><button onClick={() => setImportResult(null)} className="px-6 py-2.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors">{t('students.import.understand')}</button></div>
           </div>
         </div>
       )}
@@ -503,11 +641,11 @@ export const Students: React.FC = () => {
               <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center shrink-0">
                 <Download size={24} />
               </div>
-              <h3 className="text-xl font-bold text-zinc-900">Exportar Alumnos</h3>
+              <h3 className="text-xl font-bold text-zinc-900">{t('students.export.title')}</h3>
             </div>
             <p className="text-zinc-600 mb-8 leading-relaxed">
-              ¿Deseas incluir las fotos de los alumnos en el archivo CSV?
-              <span className="block mt-2 text-sm text-zinc-500 italic">Nota: Incluir imágenes aumentará significativamente el tamaño del archivo.</span>
+              {t('students.export.desc')}
+              <span className="block mt-2 text-sm text-zinc-500 italic">{t('students.export.note')}</span>
             </p>
             <div className="grid grid-cols-1 gap-3">
               <button
@@ -515,19 +653,19 @@ export const Students: React.FC = () => {
                 className="w-full px-6 py-3 rounded-xl font-medium bg-white border-2 border-primary-100 hover:border-primary-200 text-primary-700 transition-colors flex items-center justify-center gap-2"
               >
                 <UploadCloud size={20} />
-                Sí, incluir imágenes (CSV pesado)
+                {t('students.export.withImages')}
               </button>
               <button
                 onClick={() => exportToCSV(false)}
                 className="w-full px-6 py-3 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-white shadow-md transition-colors"
               >
-                No, solo texto (Recomendado)
+                {t('students.export.textOnly')}
               </button>
               <button
                 onClick={() => setShowExportOptions(false)}
                 className="w-full px-6 py-3 rounded-xl font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
               >
-                Cancelar
+                {t('students.cancel')}
               </button>
             </div>
           </div>

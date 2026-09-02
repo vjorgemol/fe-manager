@@ -22,6 +22,10 @@ export interface Company {
   rejectedYears?: string;
   inactiveEmail?: boolean;
   phone?: string;
+  instructorName?: string;
+  instructorDni?: string;
+  instructorEmail?: string;
+  academicYear?: string;
 }
 
 export interface Teacher {
@@ -46,8 +50,13 @@ export interface Placement {
   anexoA1?: string;
   anexoA2?: string;
   anexoA3?: string;
+  anexoA5?: string;
   allSigned?: boolean;
   a3EmailSent?: boolean;
   a2Signed?: boolean;
   a3Signed?: boolean;
+  trackingCount?: number;
+  dailyHours?: number;
+  excludedDates?: string;
+  weeklySchedule?: string;
 }

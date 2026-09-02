@@ -6,6 +6,9 @@
 
 ## 🚀 Inicio Rápido: Primeros Pasos
 
+> [!IMPORTANT]
+> **Contraseña por defecto**: Al acceder por primera vez, utiliza la contraseña **`admin`**. Te recomendamos cambiarla en la sección de **Ajustes > Seguridad** lo antes posible.
+
 1.  **Configura el Tutor**: Ve a **Ajustes** y rellena tu nombre, email y el nombre del Ciclo Formativo. Esto se usará en todos los correos automáticos.
 2.  **Configura las Horas**: En **Ajustes**, define las "Horas de la FE" (ej: 400). Este valor se usará por defecto en los correos de prospección.
 3.  **Importa tus Alumnos**: Si tienes un listado en formato Aules o un CSV propio, impórtalo desde la sección **Alumnos**.
@@ -55,9 +58,13 @@ Aquí es donde conectas a los alumnos con las empresas. Esta sección te permite
 *   **Buscador**: Puedes usar la barra de búsqueda principal para localizar rápidamente cualquier práctica por el nombre del alumno, la empresa o su localidad.
 
 ### Gestión de Documentación (Anexos)
-Lleva el control de los documentos oficiales (A1, A2, A3) directamente desde la ficha:
+Lleva el control de los documentos oficiales (A1, A2, A3 y A5) directamente desde la ficha:
 *   **Subida de PDFs**: Adjunta los documentos escaneados o firmados digitalmente.
+*   **Lectura Automática (Anexos A3 y A5)**: Al subir estos anexos, el sistema intenta procesarlos automáticamente:
+    *   **Anexo A3**: Lee el documento y detecta de forma automática la persona que firma como instructor/tutor de la empresa. Extrae sus datos (Nombre, DNI y Email) y los compara con la información actual registrada para esa empresa. Si hay alguna diferencia, el sistema te mostrará una ventana de confirmación para actualizar la ficha de la empresa con los nuevos datos del instructor automáticamente.
+    *   **Anexo A5**: Extrae el NIA del alumno para renombrar el archivo automáticamente con el formato oficial (ej. `1234567_A51_2526.pdf`).
 *   **Descarga**: Pulsa sobre el icono de un documento subido para descargarlo.
+*   **Exportación Masiva**: Puedes descargar toda la documentación de las prácticas en un único archivo ZIP mediante el botón correspondiente. El ZIP contendrá una carpeta para cada alumno (nombrada como `Apellido_Nombre`) y dentro de ella todos sus anexos (A1, A2, A3 y A5) adjuntados.
 *   **Aviso de Firma (Anexo A3)**: Si el alumno aún no ha entregado el Anexo A3, puedes hacer clic en su botón gris para generar automáticamente un correo de recordatorio solicitando la firma. *(Importante: El archivo PDF deberás adjuntarlo tú manualmente en tu cliente de correo)*.
 *   **Control Global**: Marca la casilla "Firma" para llevar un registro rápido de si todos los documentos están ya debidamente firmados.
 
@@ -84,6 +91,9 @@ Esta variable es inteligente y se adapta según el contexto:
 
 ### Backup XML (Muy Importante)
 Aunque los datos se guardan automáticamente en tu equipo, te recomendamos descargar un **Backup XML** periódicamente desde Ajustes. Este archivo contiene **TODO** (alumnos con sus fotos, empresas, histórico de años anteriores, tus plantillas de email personalizadas y la configuración de horas) y te permite restaurar el sistema en otro ordenador sin perder nada.
+
+> [!WARNING]
+> **Exclusión de Anexos**: Para evitar archivos de copia de seguridad extremadamente pesados que saturen el sistema o bloqueen el navegador, el Backup XML **NO** incluye los documentos PDF adjuntos (anexos). Si deseas descargar la documentación completa de las prácticas, utiliza la opción de exportación masiva en ZIP desde la sección de Prácticas.
 
 ### Gestión de Profesores
 Añade a tus compañeros de departamento para poder asignarlos como tutores de seguimiento en las prácticas.

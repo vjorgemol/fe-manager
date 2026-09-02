@@ -1,0 +1,6 @@
+* [Inicio](Home)
+* [Gestión de Alumnos](Alumnos)
+* [Directorio de Empresas](Empresas)
+* [Asignación de Formación](Formacion)
+* [Comunicaciones Automáticas](Comunicaciones)
+* [Ajustes y Backups](Ajustes-y-Backups)

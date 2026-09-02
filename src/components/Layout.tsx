@@ -1,18 +1,24 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X } from 'lucide-react';
+import { Users, Building2, Briefcase, Mail, LayoutDashboard, Settings as SettingsIcon, Menu, X, LogOut, Wrench } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { Breadcrumbs } from './Breadcrumbs';
 
 export const Layout: React.FC = () => {
   const { schoolName, setSchoolName, academicYear, setAcademicYear } = useData();
+  const { logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/students', icon: Users, label: 'Alumnos' },
-    { to: '/companies', icon: Building2, label: 'Empresas' },
-    { to: '/placements', icon: Briefcase, label: 'Formación' },
-    { to: '/communications', icon: Mail, label: 'Comunicaciones' },
-    { to: '/settings', icon: SettingsIcon, label: 'Ajustes' },
+    { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { to: '/students', icon: Users, label: t('nav.students') },
+    { to: '/companies', icon: Building2, label: t('nav.companies') },
+    { to: '/placements', icon: Briefcase, label: t('nav.placements') },
+    { to: '/communications', icon: Mail, label: t('nav.communications') },
+    { to: '/tools', icon: Wrench, label: t('nav.tools') },
+    { to: '/settings', icon: SettingsIcon, label: t('nav.settings') },
   ];
 
   return (
@@ -62,11 +68,18 @@ export const Layout: React.FC = () => {
           ))}
         </nav>
         <div className="p-6 border-t border-zinc-100">
+          <button 
+            onClick={logout}
+            className="flex items-center text-sm font-medium text-zinc-500 hover:text-red-600 transition-colors mb-6 w-full text-left"
+          >
+            <LogOut size={16} className="mr-2" />
+            {t('nav.logout')}
+          </button>
           <a 
             href="mailto:vicdejor@posteo.net"
             className="group block"
           >
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 group-hover:text-primary-500 transition-colors">Desarrollado por</p>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 group-hover:text-primary-500 transition-colors">{t('nav.developedBy')}</p>
             <p className="text-xs font-medium text-zinc-600 group-hover:text-zinc-900 transition-colors">Víctor Jorge Molina</p>
           </a>
           <a 
@@ -75,7 +88,7 @@ export const Layout: React.FC = () => {
             rel="noopener noreferrer"
             className="mt-3 block text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
           >
-            Hecho con <span className="font-semibold">Antigravity</span>
+            {t('nav.madeWith')} <span className="font-semibold">Antigravity</span>
           </a>
         </div>
       </aside>
@@ -89,35 +102,46 @@ export const Layout: React.FC = () => {
           >
             <Menu size={24} />
           </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="lg:hidden font-bold text-zinc-900 truncate">FE Connect</h2>
-          </div>
-          <div className="flex items-center gap-4">
+          <div className="flex-grow"></div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Language Selector */}
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as 'es' | 'val')}
+              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-2 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            >
+              <option value="es">Castellano</option>
+              <option value="val">Valencià</option>
+            </select>
+            <div className="h-6 w-px bg-zinc-200"></div>
+            
+            {/* Academic Year Selector */}
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+              className="text-sm font-bold text-primary-700 bg-primary-50 border-none focus:ring-0 outline-none hover:bg-primary-100 px-2 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
-              <option value="25/26">Curso 25/26</option>
-              <option value="26/27">Curso 26/27</option>
-              <option value="27/28">Curso 27/28</option>
-              <option value="28/29">Curso 28/29</option>
-              <option value="29/30">Curso 29/30</option>
+              <option value="25/26">{t('nav.academicYear')} 25/26</option>
+              <option value="26/27">{t('nav.academicYear')} 26/27</option>
+              <option value="27/28">{t('nav.academicYear')} 27/28</option>
+              <option value="28/29">{t('nav.academicYear')} 28/29</option>
+              <option value="29/30">{t('nav.academicYear')} 29/30</option>
             </select>
-            <div className="h-6 w-px bg-zinc-200"></div>
+            <div className="hidden sm:block h-6 w-px bg-zinc-200"></div>
             <input
               type="text"
               value={schoolName}
               onChange={(e) => setSchoolName(e.target.value)}
-              placeholder="Nombre del centro educativo"
-              className="text-sm font-medium text-zinc-600 bg-transparent border-none focus:ring-0 text-right outline-none hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
-              title="Haz clic para editar el nombre de tu centro"
+              placeholder={t('nav.schoolPlaceholder')}
+              className="hidden sm:block text-sm font-medium text-zinc-600 bg-transparent border-none focus:ring-0 text-right outline-none hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
+              title={t('nav.schoolTitle')}
             />
           </div>
         </header>
 
         <div id="main-scroll-container" className="flex-1 overflow-auto p-4 lg:p-8 print:p-0 print:overflow-visible print:block">
           <div className="max-w-6xl mx-auto print:max-w-none print:mx-0">
+            <Breadcrumbs />
             <Outlet />
           </div>
         </div>
