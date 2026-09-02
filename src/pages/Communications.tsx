@@ -24,13 +24,15 @@ export const Communications: React.FC = () => {
 
   const today = new Date();
 
-  // Empresas que no han sido contactadas en el curso actual
-  const prospectingCompanies = companies.filter(c => 
-    !c.prospectingYears?.includes(academicYear) && 
-    !c.acceptedYears?.includes(academicYear) && 
-    !c.rejectedYears?.includes(academicYear) && 
-    !placements.some(p => p.companyId === c.id)
-  );
+  // Empresas que no han sido contactadas en el curso actual, ordenadas alfabéticamente
+  const prospectingCompanies = companies
+    .filter(c => 
+      !c.prospectingYears?.includes(academicYear) && 
+      !c.acceptedYears?.includes(academicYear) && 
+      !c.rejectedYears?.includes(academicYear) && 
+      !placements.some(p => p.companyId === c.id)
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
   /**
    * Abre el gestor de correo predeterminado del sistema.
