@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Mail, Send, ExternalLink, Calendar, Building2, AlertTriangle } from 'lucide-react';
+import { Mail, Send, ExternalLink, Calendar, Building2, AlertTriangle, Search, X } from 'lucide-react';
 import { differenceInDays, parseISO, format } from 'date-fns';
 import { es, ca } from 'date-fns/locale';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +19,8 @@ export const Communications: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'prospecting' | 'reminders'>('reminders');
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
 
   const today = new Date();
 
@@ -311,16 +313,83 @@ export const Communications: React.FC = () => {
               {language === 'val' ? 'Contactar amb empreses potencials' : 'Contactar con empresas potenciales'}
             </h3>
 
-            <div className="mb-8">
-              <label className="block text-sm font-medium text-zinc-700 mb-2">{language === 'val' ? 'Selecciona una empresa del directori' : 'Selecciona una empresa del directorio'}</label>
-              <select
-                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                value={selectedCompany}
-                onChange={e => setSelectedCompany(e.target.value)}
-              >
-                <option value="">{language === 'val' ? 'Seleccionar empresa...' : 'Seleccionar empresa...'}</option>
-                {prospectingCompanies.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
-              </select>
+            <div className="mb-8 relative">
+              <label className="block text-sm font-medium text-zinc-700 mb-2">
+                {language === 'val' ? 'Buscar empresa potencial del directori' : 'Buscar empresa potencial del directorio'}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400">
+                  <Search size={20} />
+                </div>
+                <input
+                  type="text"
+                  className="w-full pl-11 pr-10 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all text-zinc-900"
+                  placeholder={
+                    language === 'val' 
+                      ? 'Cercar per nom, correu o localitat...' 
+                      : 'Buscar por nombre, correo o localidad...'
+                  }
+                  value={companySearch || (selectedCompany ? companies.find(c => c.id === selectedCompany)?.name : '') || ''}
+                  onChange={e => {
+                    setCompanySearch(e.target.value);
+                    if (selectedCompany) setSelectedCompany('');
+                    setIsCompanyDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsCompanyDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsCompanyDropdownOpen(false), 200)}
+                />
+                {(companySearch || selectedCompany) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompanySearch('');
+                      setSelectedCompany('');
+                      setIsCompanyDropdownOpen(false);
+                    }}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+
+              {isCompanyDropdownOpen && (
+                <div className="absolute z-20 w-full mt-1 bg-white border border-zinc-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {prospectingCompanies
+                    .filter(c => 
+                      c.name.toLowerCase().includes(companySearch.toLowerCase()) || 
+                      c.location.toLowerCase().includes(companySearch.toLowerCase()) ||
+                      c.email.toLowerCase().includes(companySearch.toLowerCase())
+                    )
+                    .map(c => (
+                      <div
+                        key={c.id}
+                        className="px-4 py-3 hover:bg-zinc-50 cursor-pointer border-b border-zinc-100 last:border-0 transition-colors flex justify-between items-center"
+                        onMouseDown={() => {
+                          setSelectedCompany(c.id);
+                          setCompanySearch(c.name);
+                          setIsCompanyDropdownOpen(false);
+                        }}
+                      >
+                        <div>
+                          <div className="font-medium text-zinc-900">{c.name}</div>
+                          <div className="text-xs text-zinc-500">{c.location} • {c.email}</div>
+                        </div>
+                      </div>
+                    ))}
+                  {prospectingCompanies.filter(c => 
+                    c.name.toLowerCase().includes(companySearch.toLowerCase()) || 
+                    c.location.toLowerCase().includes(companySearch.toLowerCase()) ||
+                    c.email.toLowerCase().includes(companySearch.toLowerCase())
+                  ).length === 0 && (
+                    <div className="px-4 py-4 text-sm text-zinc-500 text-center font-medium">
+                      {language === 'val' 
+                        ? 'No es van trobar empreses pendents de prospecció.' 
+                        : 'No se encontraron empresas pendientes de prospección.'}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {selectedCompany && (
@@ -359,6 +428,7 @@ export const Communications: React.FC = () => {
                               }
                               updateCompany({ ...comp, prospectingYears: years.join(',') });
                               setSelectedCompany('');
+                              setCompanySearch('');
                             }
                           }}
                           className="flex-1 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 px-6 py-4 rounded-xl font-bold text-lg flex items-center justify-center transition-all shadow-sm"
