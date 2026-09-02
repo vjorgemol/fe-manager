@@ -27,6 +27,7 @@ interface DataContextType {
   cycleName: string;
   setCycleName: (name: string) => void;
   allStudents: Student[];
+  allCompanies: Company[];
   allPlacements: Placement[];
   importData: (data: { students: Student[], companies: Company[], placements: Placement[], teachers?: Teacher[], schoolName: string, academicYear: string, reminderDays?: number, tutorName?: string, tutorEmail?: string, cycleName?: string, templateProspecting?: string, templateStart?: string, templateTracking?: string, templateEnd?: string, cycleHours?: number }) => void;
   addStudent: (student: Omit<Student, 'id'>) => void;
@@ -306,12 +307,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /**
    * Filtrado inteligente de datos según el curso académico seleccionado.
-   * - Alumnos: Se muestran los del curso actual y el anterior (para facilitar re-asignaciones).
+   * - Alumnos: Solo se muestran los pertenecientes al curso actual.
+   * - Empresas: Solo se muestran las que tienen actividad o fueron registradas en el curso actual.
    * - Asignaciones: Solo se muestran las del curso actual.
    */
-  const filteredStudents = students.filter(s => 
-    s.academicYear === academicYear || s.academicYear === getPreviousYear(academicYear)
-  );
+  const filteredStudents = students.filter(s => s.academicYear === academicYear);
+
+  const filteredCompanies = companies.filter(c => {
+    const pYears = c.prospectingYears ? c.prospectingYears.split(',').filter(Boolean) : [];
+    const aYears = c.acceptedYears ? c.acceptedYears.split(',').filter(Boolean) : [];
+    const rYears = c.rejectedYears ? c.rejectedYears.split(',').filter(Boolean) : [];
+    const hasPlacementInYear = placements.some(p => p.companyId === c.id && p.academicYear === academicYear);
+
+    return (
+      pYears.includes(academicYear) ||
+      aYears.includes(academicYear) ||
+      rYears.includes(academicYear) ||
+      hasPlacementInYear ||
+      c.academicYear === academicYear
+    );
+  });
+
   const filteredPlacements = placements.filter(p => p.academicYear === academicYear);
 
   /**
@@ -346,7 +362,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DataContext.Provider value={{
       students: filteredStudents, 
       allStudents: students,
-      companies, 
+      companies: filteredCompanies, 
+      allCompanies: companies,
       placements: filteredPlacements, 
       allPlacements: placements,
       teachers,

@@ -362,8 +362,8 @@ app.post('/api/import', async (req, res) => {
     }
 
     for (const c of companies) {
-      await run(`INSERT INTO companies (id, name, email, location, contactPerson, address, prospectingSent, prospectingYears, acceptedYears, rejectedYears, inactiveEmail, phone, instructorName, instructorDni, instructorEmail) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [c.id, c.name, c.email, c.location, c.contactPerson || null, c.address || null, c.prospectingSent ? 1 : 0, c.prospectingYears || '', c.acceptedYears || '', c.rejectedYears || '', c.inactiveEmail ? 1 : 0, c.phone || null, c.instructorName || null, c.instructorDni || null, c.instructorEmail || null]);
+      await run(`INSERT INTO companies (id, name, email, location, contactPerson, address, prospectingSent, prospectingYears, acceptedYears, rejectedYears, inactiveEmail, phone, instructorName, instructorDni, instructorEmail, academicYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [c.id, c.name, c.email, c.location, c.contactPerson || null, c.address || null, c.prospectingSent ? 1 : 0, c.prospectingYears || '', c.acceptedYears || '', c.rejectedYears || '', c.inactiveEmail ? 1 : 0, c.phone || null, c.instructorName || null, c.instructorDni || null, c.instructorEmail || null, c.academicYear || null]);
     }
 
     for (const p of placements) {
@@ -419,15 +419,15 @@ app.get('/api/companies', async (req, res) => {
 
 app.post('/api/companies', async (req, res) => {
   const c = req.body;
-  await run(`INSERT INTO companies (id, name, email, location, contactPerson, address, prospectingSent, prospectingYears, acceptedYears, rejectedYears, inactiveEmail, phone, instructorName, instructorDni, instructorEmail) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-    [c.id, c.name, c.email, c.location, c.contactPerson || null, c.address || null, c.prospectingSent ? 1 : 0, c.prospectingYears || '', c.acceptedYears || '', c.rejectedYears || '', c.inactiveEmail ? 1 : 0, c.phone || null, c.instructorName || null, c.instructorDni || null, c.instructorEmail || null]);
+  await run(`INSERT INTO companies (id, name, email, location, contactPerson, address, prospectingSent, prospectingYears, acceptedYears, rejectedYears, inactiveEmail, phone, instructorName, instructorDni, instructorEmail, academicYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+    [c.id, c.name, c.email, c.location, c.contactPerson || null, c.address || null, c.prospectingSent ? 1 : 0, c.prospectingYears || '', c.acceptedYears || '', c.rejectedYears || '', c.inactiveEmail ? 1 : 0, c.phone || null, c.instructorName || null, c.instructorDni || null, c.instructorEmail || null, c.academicYear || null]);
   res.json({ success: true });
 });
 
 app.put('/api/companies/:id', async (req, res) => {
   const c = req.body;
-  await run(`UPDATE companies SET name=?, email=?, location=?, contactPerson=?, address=?, prospectingSent=?, prospectingYears=?, acceptedYears=?, rejectedYears=?, inactiveEmail=?, phone=?, instructorName=?, instructorDni=?, instructorEmail=? WHERE id=?`, 
-    [c.name, c.email, c.location, c.contactPerson || null, c.address || null, c.prospectingSent ? 1 : 0, c.prospectingYears || '', c.acceptedYears || '', c.rejectedYears || '', c.inactiveEmail ? 1 : 0, c.phone || null, c.instructorName || null, c.instructorDni || null, c.instructorEmail || null, req.params.id]);
+  await run(`UPDATE companies SET name=?, email=?, location=?, contactPerson=?, address=?, prospectingSent=?, prospectingYears=?, acceptedYears=?, rejectedYears=?, inactiveEmail=?, phone=?, instructorName=?, instructorDni=?, instructorEmail=?, academicYear=? WHERE id=?`, 
+    [c.name, c.email, c.location, c.contactPerson || null, c.address || null, c.prospectingSent ? 1 : 0, c.prospectingYears || '', c.acceptedYears || '', c.rejectedYears || '', c.inactiveEmail ? 1 : 0, c.phone || null, c.instructorName || null, c.instructorDni || null, c.instructorEmail || null, c.academicYear || null, req.params.id]);
   res.json({ success: true });
 });
 

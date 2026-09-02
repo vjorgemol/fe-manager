@@ -25,6 +25,7 @@ export interface Company {
   instructorName?: string;
   instructorDni?: string;
   instructorEmail?: string;
+  academicYear?: string;
 }
 
 export interface Teacher {

@@ -36,7 +36,7 @@ const AccordionItem: React.FC<{ title: string; description: string; icon: React.
 export const Settings: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const { 
-    allStudents, companies, allPlacements, teachers, schoolName, academicYear, 
+    allStudents, allCompanies, allPlacements, teachers, schoolName, academicYear, 
     reminderDays, setReminderDays, tutorName, setTutorName, tutorEmail, setTutorEmail, 
     cycleName, setCycleName, importData, addTeacher, deleteTeacher,
     templateProspecting, setTemplateProspecting,
@@ -104,7 +104,7 @@ export const Settings: React.FC = () => {
     xml += `  </students>\n`;
 
     xml += `  <companies>\n`;
-    companies.forEach(c => {
+    allCompanies.forEach(c => {
       xml += `    <company>\n`;
       xml += `      <id>${escapeXml(c.id)}</id>\n`;
       xml += `      <name>${escapeXml(c.name)}</name>\n`;

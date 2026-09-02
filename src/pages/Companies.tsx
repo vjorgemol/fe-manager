@@ -215,7 +215,8 @@ export const Companies: React.FC = () => {
         ...c,
         prospectingYears: '',
         acceptedYears: '',
-        rejectedYears: ''
+        rejectedYears: '',
+        academicYear
       });
     });
     setImportResult({ count: pendingImport.companies.length, skipped: pendingImport.skipped });
@@ -223,9 +224,8 @@ export const Companies: React.FC = () => {
   };
 
   /**
-   * Gestiona el envío del formulario.
-   * Calcula los históricos de colaboración (prospección, aceptado, rechazado) 
-   * concatenando el curso actual a los campos correspondientes en la DB.
+   * Procesa el envío del formulario de alta/edición de empresa.
+   * Actualiza o crea el registro de la empresa y actualiza sus listas de estados por año.
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,7 +264,8 @@ export const Companies: React.FC = () => {
         ...formData,
         prospectingYears: pYears,
         acceptedYears: aYears,
-        rejectedYears: rYears
+        rejectedYears: rYears,
+        academicYear
       } as any);
     }
     resetForm();

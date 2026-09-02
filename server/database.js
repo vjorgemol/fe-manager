@@ -150,6 +150,9 @@ db.serialize(() => {
       if (!columns.some(c => c.name === 'instructorEmail')) {
         db.run("ALTER TABLE companies ADD COLUMN instructorEmail TEXT");
       }
+      if (!columns.some(c => c.name === 'academicYear')) {
+        db.run("ALTER TABLE companies ADD COLUMN academicYear TEXT");
+      }
     }
   });
   
